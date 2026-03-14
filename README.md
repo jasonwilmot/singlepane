@@ -1,8 +1,6 @@
 # Single Pane
 
-**A single pane of glass for Claude Code development.**
-
-Single Pane is a native macOS app that puts your terminal, file explorer, and file viewer side by side in one window. It's not an IDE. It's a focused workspace for developers who build with Claude Code and other AI coding tools — everything you need to see, nothing you don't.
+**A single pane of glass for agentic development.** Designed for builders and prototypers who've ditched their IDE. Compatible with Codex and Gemini, but purpose-built for Claude Code hooks — browse Hacker News and get audio and visual notifications the moment your agents need more food.
 
 ![Single Pane — Claude Code in the terminal](assets/screenshots/terminal-claude-code.png)
 
