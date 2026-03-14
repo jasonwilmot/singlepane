@@ -51,9 +51,9 @@ Single Pane connects to Claude Code through its [hooks system](https://docs.anth
 
 Choose from 9 voice packs and 3 sound packs, or mute individual events. You also get macOS notifications for **Stop** and **Notification** events, so you'll see a banner when Claude finishes a task or needs your attention — even if the app is in the background.
 
-**Preview the sounds:**
-
 ![Voice Packs](assets/screenshots/voice-packs.png)
+
+**Preview the sounds:**
 
 🔔 Notification — [▶ Play](assets/audio/notification-sample.mp3)
 
@@ -73,7 +73,11 @@ A dual-pane file browser with tabs, built for navigating projects quickly.
 
 **Smart breadcrumb navigation** — The breadcrumb bar does more than show your path. Click any segment to see sibling directories in a dropdown. Click the empty space to type a path directly with autocomplete. Previously visited deeper paths appear as faded "ghost" segments you can click to jump back.
 
+![Breadcrumb Navigation](assets/screenshots/breadcrumb.png)
+
 **Filter as you type** — Start typing in any directory to instantly filter the file list. A filter pill shows your active filter with a clear button.
+
+![Filter](assets/screenshots/filter.png)
 
 **Full-text search** — Search across filenames and file contents from the breadcrumb bar. Toggle between filename and content search, enable regex matching, and switch case sensitivity. Results stream in as they're found.
 
@@ -139,20 +143,9 @@ Arrange your workspace the way you work.
 
 ![Themes](assets/screenshots/themes.png)
 
-**Font selection** — Choose your preferred monospace font. The selection applies across the terminal and editor. Single Pane ships with 10 bundled fonts:
+**Font selection** — Choose your preferred monospace font. The selection applies across the terminal and editor. Single Pane ships with bundled fonts plus system fonts, all with Nerd Font symbol support for Powerline glyphs and developer icons.
 
-- Hack
-- Inconsolata
-- Fira Code
-- JetBrains Mono
-- Victor Mono
-- Cascadia Code
-- Departure Mono
-- Maple Mono
-- Iosevka
-- Geist Mono
-
-System fonts like SF Mono, Menlo, Monaco, and Courier New are also available. All fonts include Nerd Font symbol support for Powerline glyphs and developer icons.
+![Fonts](assets/screenshots/fonts.png)
 
 ---
 
