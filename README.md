@@ -49,6 +49,12 @@ Single Pane connects to Claude Code through its [hooks system](https://docs.anth
 
 Choose from 9 voice packs and 3 sound packs, or mute individual events. You also get macOS notifications for **Stop** and **Notification** events, so you'll see a banner when Claude finishes a task or needs your attention — even if the app is in the background.
 
+**Preview the sounds:**
+
+🔔 Notification — [▶ Play](assets/audio/notification-sample.mp3)
+
+🤖 Subagent spawned — [▶ Play](assets/audio/subagent-sample.mp3)
+
 ---
 
 ## File Explorer
