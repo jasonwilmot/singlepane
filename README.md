@@ -51,7 +51,9 @@ Choose from 9 voice packs and 3 sound packs, or mute individual events. You also
 
 **Preview the sounds:**
 
-🔔 [▶ Notification sound](https://github.com/jasonwilmot/singlepane/raw/main/assets/audio/notification-sample.mp4) · 🤖 [▶ Subagent sound](https://github.com/jasonwilmot/singlepane/raw/main/assets/audio/subagent-sample.mp4)
+🔔 Notification — [▶ Play](assets/audio/notification-sample.mp3)
+
+🤖 Subagent spawned — [▶ Play](assets/audio/subagent-sample.mp3)
 
 ---
 
