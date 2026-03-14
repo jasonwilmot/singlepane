@@ -4,7 +4,7 @@
 
 Single Pane is a native macOS app that puts your terminal, file explorer, and file viewer side by side in one window. It's not an IDE. It's a focused workspace for developers who build with Claude Code and other AI coding tools — everything you need to see, nothing you don't.
 
-![Single Pane](assets/screenshots/hero.png)
+![Single Pane — Claude Code in the terminal](assets/screenshots/terminal-claude-code.png)
 
 [Download Single Pane](https://github.com/jasonwilmot/cli/releases/download/v0.1.0/SinglePane.dmg) | [singlepane.dev](https://singlepane.dev)
 
