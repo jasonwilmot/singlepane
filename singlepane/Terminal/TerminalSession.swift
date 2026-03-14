@@ -24,6 +24,11 @@ final class TerminalSession {
     /// 1-based index of the current match within the total count.
     var currentMatchIndex: Int = 0
 
+    /// User-assigned custom tab title. When set, overrides the auto-generated
+    /// directory name. Cleared (nil) to revert to the default CWD-based title.
+    /// Not persisted across app restarts.
+    var customTabTitle: String?
+
     /// Current working directory reported by the shell via OSC 7.
     /// Used to resolve relative file paths for click-to-open link detection.
     var currentDirectory: String?

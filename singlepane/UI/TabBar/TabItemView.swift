@@ -34,6 +34,8 @@ final class TabItemView: NSView {
     var onSelect: ((Int, Bool) -> Void)?
     var onClose: ((Int) -> Void)?
     var onDoubleClick: ((Int) -> Void)?
+    /// Called when the user commits an inline rename. Receives (tabIndex, newTitle).
+    var onRename: ((Int, String) -> Void)?
 
     private let style: Style
     private var orientationMode: OrientationMode = .horizontal
@@ -42,6 +44,7 @@ final class TabItemView: NSView {
     private let closeButton = NSButton()
     private var isSelected = false
     private var isFocused = false
+    private var isEditing = false
     private var isSpinning = false
     private var spinnerTimer: Timer?
 
@@ -380,6 +383,7 @@ final class TabItemView: NSView {
     /// NSTextField subviews can intercept mouse events and consume them silently.
     /// By returning self for all non-close-button clicks, we guarantee mouseDown
     /// is delivered to TabItemView for tab selection.
+    /// Exception: when the title label is in edit mode, let it receive its own events.
     override func hitTest(_ point: NSPoint) -> NSView? {
         // point is in superview's (NSStackView's) coordinate space
         guard !isHidden, frame.contains(point) else { return nil }
@@ -389,6 +393,12 @@ final class TabItemView: NSView {
         // Let the close button handle its own click events
         if style == .full && !closeButton.isHidden && closeButton.frame.contains(local) {
             return closeButton
+        }
+
+        // While editing, let the title label's field editor handle mouse events
+        // so the user can click to position the cursor within the text.
+        if isEditing, titleLabel.frame.contains(local) {
+            return super.hitTest(point)
         }
 
         // Return self for all other clicks — labels don't need mouse events
@@ -413,5 +423,84 @@ final class TabItemView: NSView {
 
     @objc private func closeClicked() {
         onClose?(index)
+    }
+
+    // MARK: - Right-Click Rename
+
+    /// Right-click enters inline edit mode when renaming is supported.
+    override func rightMouseDown(with event: NSEvent) {
+        guard onRename != nil else {
+            super.rightMouseDown(with: event)
+            return
+        }
+        startEditing()
+    }
+
+    // MARK: - Inline Editing
+
+    /// Enters inline edit mode — makes the title label editable, selects all text,
+    /// and gives it first responder focus so the user can immediately type a new name.
+    func startEditing() {
+        guard !isEditing else { return }
+        isEditing = true
+
+        titleLabel.isEditable = true
+        titleLabel.isBordered = true
+        titleLabel.drawsBackground = true
+        titleLabel.backgroundColor = ThemeManager.shared.activeTheme.chromeBackground
+        titleLabel.delegate = self
+        titleLabel.lineBreakMode = .byClipping
+
+        // Focus and select all text for quick replacement
+        window?.makeFirstResponder(titleLabel)
+        titleLabel.selectText(nil)
+    }
+
+    /// Exits inline edit mode — restores the title label to a non-editable display label.
+    private func endEditing() {
+        guard isEditing else { return }
+        isEditing = false
+
+        titleLabel.isEditable = false
+        titleLabel.isBordered = false
+        titleLabel.drawsBackground = false
+        titleLabel.delegate = nil
+        titleLabel.lineBreakMode = .byTruncatingTail
+    }
+
+    /// Commits the current edit — fires the rename callback with the new title,
+    /// then exits edit mode.
+    private func commitEdit() {
+        let newTitle = titleLabel.stringValue.trimmingCharacters(in: .whitespaces)
+        endEditing()
+        onRename?(index, newTitle)
+    }
+}
+
+// MARK: - NSTextFieldDelegate
+
+extension TabItemView: NSTextFieldDelegate {
+
+    /// Handle Enter to commit and Escape to cancel.
+    func control(
+        _ control: NSControl,
+        textView: NSTextView,
+        doCommandBy commandSelector: Selector
+    ) -> Bool {
+        if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+            commitEdit()
+            return true
+        }
+        if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+            endEditing()
+            return true
+        }
+        return false
+    }
+
+    /// Commit when the field loses focus (e.g. clicking elsewhere).
+    func controlTextDidEndEditing(_ obj: Notification) {
+        guard isEditing else { return }
+        commitEdit()
     }
 }

@@ -318,9 +318,10 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
 
         sessionManager = TerminalSessionManager(containerView: contentArea)
 
-        // Enable group-all and orientation toggle buttons on terminal tabs
+        // Enable group-all, orientation toggle, and inline rename on terminal tabs
         tabBar.supportsGrouping = true
         tabBar.supportsOrientationToggle = true
+        tabBar.supportsRename = true
 
         // Create the first terminal session
         createNewSession()
@@ -572,6 +573,23 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
               let cwd = sessionManager.sessions[index].currentDirectory else { return }
         let url = URL(fileURLWithPath: cwd)
         NotificationCenter.default.post(name: .terminalTabDidRequestNavigate, object: url)
+    }
+
+    func tabBarDidRenameTab(at index: Int, newTitle: String) {
+        guard sessionManager.sessions.indices.contains(index) else { return }
+        let session = sessionManager.sessions[index]
+
+        if newTitle.isEmpty {
+            // Empty name reverts to directory-based title
+            session.customTabTitle = nil
+            let dirName = session.currentDirectory
+                .map { URL(fileURLWithPath: $0).lastPathComponent }
+                ?? "Terminal"
+            tabBar.updateTabTitle(dirName, at: index)
+        } else {
+            session.customTabTitle = newTitle
+            tabBar.updateTabTitle(newTitle, at: index)
+        }
     }
 
     // MARK: - Split View Management
@@ -1635,8 +1653,11 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
 
             if let index = sessionManager.sessions.firstIndex(where: { $0.terminalView === source }) {
                 sessionManager.sessions[index].currentDirectory = path
-                let dirName = URL(fileURLWithPath: path).lastPathComponent
-                tabBar.updateTabTitle(dirName, at: index)
+                // Only update the tab title if no custom name is set
+                if sessionManager.sessions[index].customTabTitle == nil {
+                    let dirName = URL(fileURLWithPath: path).lastPathComponent
+                    tabBar.updateTabTitle(dirName, at: index)
+                }
             }
             // CWD changed — relative paths may resolve differently now
             self.scanVisibleLinks()

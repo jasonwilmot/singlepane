@@ -34,7 +34,7 @@ A full terminal built into your workspace. Run Claude Code, manage processes, an
 
 **Command status at a glance** — The gutter shows success and failure indicators for each command, so you can scan your history and spot errors instantly.
 
-### Claude Code Audio Hooks
+### Claude Code Notifications
 
 Single Pane plays audio cues and sends macOS system notifications when Claude Code events happen in your terminal sessions, so you know what's going on without watching the screen. Each event triggers a distinct sound:
 

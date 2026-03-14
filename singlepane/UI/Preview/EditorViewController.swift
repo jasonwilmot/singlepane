@@ -249,13 +249,20 @@ final class EditorViewController: NSViewController, NSTextViewDelegate {
         // markdown-specific editing behaviors are guarded by isMarkdownMode
         textView.delegate = self
 
-        // Re-register text change observer — removing and re-adding the editor view
-        // to the hierarchy can break notification delivery
+        // Re-register notification observers — removing and re-adding the editor view
+        // to the hierarchy (tab switching) can break notification delivery
         NotificationCenter.default.removeObserver(self, name: NSText.didChangeNotification, object: textView)
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleTextChange),
             name: NSText.didChangeNotification,
+            object: textView
+        )
+        NotificationCenter.default.removeObserver(self, name: NSTextView.didChangeSelectionNotification, object: textView)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleSelectionChange),
+            name: NSTextView.didChangeSelectionNotification,
             object: textView
         )
 

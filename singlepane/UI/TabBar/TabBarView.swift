@@ -72,6 +72,9 @@ protocol TabBarDelegate: AnyObject {
 
     /// Called when the user double-clicks a tab.
     func tabBarDidDoubleClickTab(at index: Int)
+
+    /// Called when the user commits an inline tab rename.
+    func tabBarDidRenameTab(at index: Int, newTitle: String)
 }
 
 // Default no-op implementations so only terminal containers need grouping.
@@ -82,6 +85,7 @@ extension TabBarDelegate {
     func tabBarDidChangeArrangement(_ mode: ArrangementMode) {}
     func tabBarDidToggleOrientation() {}
     func tabBarDidDoubleClickTab(at index: Int) {}
+    func tabBarDidRenameTab(at index: Int, newTitle: String) {}
 }
 
 // MARK: - Tab Bar View
@@ -108,6 +112,10 @@ final class TabBarView: NSView {
     /// Whether the group-all button should be available. Defaults to false.
     /// Set to true for terminal tab bars where grouping is supported.
     var supportsGrouping: Bool = false
+
+    /// Whether right-clicking a tab enters inline rename mode. Defaults to false.
+    /// Set to true for terminal tab bars where custom tab names are supported.
+    var supportsRename: Bool = false
 
     /// Whether closing the last remaining tab is allowed. Defaults to false.
     /// When true, the close button fires the delegate even for the final tab.
@@ -488,6 +496,13 @@ final class TabBarView: NSView {
         tabItem.onClose = { [weak self] idx in self?.closeTab(at: idx) }
         tabItem.onDoubleClick = { [weak self] idx in
             self?.delegate?.tabBarDidDoubleClickTab(at: idx)
+        }
+
+        // Wire inline rename callback when the tab bar supports it
+        if supportsRename {
+            tabItem.onRename = { [weak self] idx, newTitle in
+                self?.delegate?.tabBarDidRenameTab(at: idx, newTitle: newTitle)
+            }
         }
 
         // Match current orientation mode for vertical row styling
