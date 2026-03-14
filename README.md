@@ -4,7 +4,7 @@
 
 ![Single Pane — Claude Code in the terminal](assets/screenshots/terminal-claude-code.png)
 
-[Download Single Pane](https://github.com/jasonwilmot/cli/releases/download/v0.1.0/SinglePane.dmg) | [singlepane.dev](https://singlepane.dev)
+[Download Single Pane](https://github.com/jasonwilmot/singlepane/releases/download/v0.1.0/SinglePane.dmg) | [singlepane.dev](https://singlepane.dev)
 
 ---
 
@@ -204,7 +204,7 @@ Assign custom keyboard shortcuts to any layout — snap presets or your own save
 
 Single Pane requires **macOS 14 Sonoma** or later.
 
-[Download Single Pane (.dmg)](https://github.com/jasonwilmot/cli/releases/download/v0.1.0/SinglePane.dmg)
+[Download Single Pane (.dmg)](https://github.com/jasonwilmot/singlepane/releases/download/v0.1.0/SinglePane.dmg)
 
 ---
 
