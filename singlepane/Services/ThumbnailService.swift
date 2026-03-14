@@ -5,6 +5,7 @@
 
 import AppKit
 import QuickLookThumbnailing
+import UniformTypeIdentifiers
 
 actor ThumbnailService {
 
@@ -24,14 +25,32 @@ actor ThumbnailService {
 
     // MARK: - Public API
 
+    /// Image UTTypes eligible for QuickLook thumbnail generation.
+    private static let imageTypes: Set<String> = [
+        "public.image", "public.jpeg", "public.png", "public.tiff",
+        "public.heic", "public.heif", "public.svg-image",
+        "com.compuserve.gif", "public.webp", "com.microsoft.bmp",
+        "com.microsoft.ico", "public.icns", "public.camera-raw-image"
+    ]
+
     /// Returns a cached thumbnail or generates one asynchronously.
-    /// Falls back to the file-type icon if QuickLook cannot produce a thumbnail.
+    /// Only generates QuickLook thumbnails for image files.
+    /// Non-image files receive their file-type icon directly.
     func thumbnail(for url: URL, size: ThumbnailSize) async -> NSImage {
         let key = cacheKey(url: url, size: size)
 
         // Cache hit — return immediately
         if let cached = cache.object(forKey: key) {
             return cached
+        }
+
+        // Only generate thumbnails for image files
+        if !Self.isImageFile(url) {
+            let icon = await MainActor.run {
+                NSWorkspace.shared.icon(forFile: url.path)
+            }
+            cache.setObject(icon, forKey: key)
+            return icon
         }
 
         // Generate via QuickLook
@@ -69,5 +88,21 @@ actor ThumbnailService {
     /// Builds a cache key combining file path and size tier.
     private func cacheKey(url: URL, size: ThumbnailSize) -> NSString {
         "\(url.path)_\(size.rawValue)" as NSString
+    }
+
+    /// Checks whether the file at `url` is an image type eligible for thumbnail generation.
+    private static func isImageFile(_ url: URL) -> Bool {
+        guard let resourceValues = try? url.resourceValues(forKeys: [.typeIdentifierKey]),
+              let uti = resourceValues.typeIdentifier else {
+            return false
+        }
+        if imageTypes.contains(uti) { return true }
+        // Also check UTType conformance for subtypes (e.g. vendor-specific image formats)
+        if #available(macOS 11.0, *) {
+            if let utType = UTType(uti) {
+                return utType.conforms(to: .image)
+            }
+        }
+        return false
     }
 }

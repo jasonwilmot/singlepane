@@ -323,8 +323,9 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         tabBar.supportsOrientationToggle = true
         tabBar.supportsRename = true
 
-        // Create the first terminal session
-        createNewSession()
+        // Create the first terminal session in ~/Documents
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        createNewSession(directory: documentsURL?.path)
 
         // Apply initial theme/font and start observing changes
         applyTerminalTheme()
@@ -931,7 +932,13 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
             session?.terminalView.send(txt: escapedPaths)
         }
         dropView.onFolderDropped = { [weak self] folderURL in
-            self?.createNewSession(directory: folderURL.path, focusAfterCreation: true)
+            // Defer to the next run loop so performDragOperation returns before
+            // the view hierarchy is torn down. Without this, removing the drop
+            // view during the drag operation corrupts AppKit's drag tracking
+            // state and breaks subsequent mouse event delivery to the tab bar.
+            DispatchQueue.main.async {
+                self?.createNewSession(directory: folderURL.path, focusAfterCreation: true)
+            }
         }
 
         paneDropViews[index] = dropView

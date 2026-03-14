@@ -45,6 +45,11 @@ final class TabItemView: NSView {
     private var isSelected = false
     private var isFocused = false
     private var isEditing = false
+    /// Dedicated editing text field — overlays the title label during rename.
+    private var editField: NSTextField?
+    /// Local event monitors that protect the edit field's focus during inline rename.
+    nonisolated(unsafe) private var editKeyMonitor: Any?
+    nonisolated(unsafe) private var editClickMonitor: Any?
     private var isSpinning = false
     private var spinnerTimer: Timer?
 
@@ -395,9 +400,9 @@ final class TabItemView: NSView {
             return closeButton
         }
 
-        // While editing, let the title label's field editor handle mouse events
+        // While editing, let the edit field's field editor handle mouse events
         // so the user can click to position the cursor within the text.
-        if isEditing, titleLabel.frame.contains(local) {
+        if isEditing, let editField, editField.frame.contains(local) {
             return super.hitTest(point)
         }
 
@@ -410,6 +415,11 @@ final class TabItemView: NSView {
     /// interactions, where NSScrollView can swallow mouseUp from subviews.
     /// Double-click fires onDoubleClick instead of onSelect.
     override func mouseDown(with event: NSEvent) {
+        // During inline editing, don't trigger tab selection — that would call
+        // tabBarDidSelectTab → showSingleTerminal → makeFirstResponder(terminalView),
+        // stealing focus from the edit field.
+        guard !isEditing else { return }
+
         let location = convert(event.locationInWindow, from: nil)
         guard bounds.contains(location) else { return }
 
@@ -438,40 +448,117 @@ final class TabItemView: NSView {
 
     // MARK: - Inline Editing
 
-    /// Enters inline edit mode — makes the title label editable, selects all text,
-    /// and gives it first responder focus so the user can immediately type a new name.
+    /// Enters inline edit mode — creates a dedicated editable text field overlaying
+    /// the title label. Using a separate NSTextField avoids issues with converting
+    /// a label (created via NSTextField(labelWithString:)) to editable mode, where
+    /// the field editor activates visually but fails to receive key events.
     func startEditing() {
         guard !isEditing else { return }
         isEditing = true
 
-        titleLabel.isEditable = true
-        titleLabel.isBordered = true
-        titleLabel.drawsBackground = true
-        titleLabel.backgroundColor = ThemeManager.shared.activeTheme.chromeBackground
-        titleLabel.delegate = self
-        titleLabel.lineBreakMode = .byClipping
+        let theme = ThemeManager.shared.activeTheme
+        let field = NSTextField(string: titleLabel.stringValue)
+        field.font = titleLabel.font
+        field.textColor = theme.chromeText
+        field.backgroundColor = theme.chromeBackground
+        field.isBordered = true
+        field.isBezeled = true
+        field.bezelStyle = .roundedBezel
+        field.drawsBackground = true
+        field.isEditable = true
+        field.isSelectable = true
+        field.delegate = self
+        field.lineBreakMode = .byClipping
+        field.cell?.isScrollable = true
+        field.cell?.wraps = false
+        field.cell?.usesSingleLineMode = true
+        field.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(field)
 
-        // Focus and select all text for quick replacement
-        window?.makeFirstResponder(titleLabel)
-        titleLabel.selectText(nil)
+        NSLayoutConstraint.activate([
+            field.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor, constant: -2),
+            field.trailingAnchor.constraint(equalTo: closeButton.leadingAnchor, constant: -2),
+            field.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
+        ])
+
+        titleLabel.isHidden = true
+        editField = field
+
+        // Key event monitor: before every keystroke, force focus back to the
+        // edit field. Terminal views, split-focus monitors, and other parts of
+        // the app routinely call makeFirstResponder(terminalView) — this
+        // reclaims focus so the keystroke reaches the field editor.
+        editKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
+            [weak self] event in
+            guard let self, self.isEditing, let field = self.editField,
+                  event.window === self.window else { return event }
+
+            // Reclaim focus if stolen
+            if field.currentEditor() == nil {
+                self.window?.makeFirstResponder(field)
+            }
+
+            return event
+        }
+
+        // Click-away monitor: commit the edit when the user clicks outside the
+        // edit field. This replaces controlTextDidEndEditing, which fired on ANY
+        // focus loss (including stolen focus from terminal monitors) and
+        // immediately destroyed the edit field — causing the jitter.
+        editClickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) {
+            [weak self] event in
+            guard let self, self.isEditing, let field = self.editField,
+                  event.window === self.window else { return event }
+
+            let pointInField = field.convert(event.locationInWindow, from: nil)
+            if !field.bounds.contains(pointInField) {
+                self.commitEdit()
+            }
+
+            return event
+        }
+
+        // Defer initial focus so AppKit finishes processing the right-click.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.isEditing, let field = self.editField else { return }
+            self.window?.makeFirstResponder(field)
+            field.selectText(nil)
+
+            // Style the selection with a bright accent highlight so the user
+            // knows they can just start typing to replace the name.
+            if let editor = field.currentEditor() as? NSTextView {
+                let accent = ThemeManager.shared.activeTheme.chromeAccent
+                editor.selectedTextAttributes = [
+                    .backgroundColor: accent.withAlphaComponent(0.45),
+                    .foregroundColor: NSColor.white,
+                ]
+            }
+        }
     }
 
-    /// Exits inline edit mode — restores the title label to a non-editable display label.
+    /// Exits inline edit mode — removes the editing field, monitors, and restores the title label.
     private func endEditing() {
         guard isEditing else { return }
         isEditing = false
 
-        titleLabel.isEditable = false
-        titleLabel.isBordered = false
-        titleLabel.drawsBackground = false
-        titleLabel.delegate = nil
-        titleLabel.lineBreakMode = .byTruncatingTail
+        if let monitor = editKeyMonitor {
+            NSEvent.removeMonitor(monitor)
+            editKeyMonitor = nil
+        }
+        if let monitor = editClickMonitor {
+            NSEvent.removeMonitor(monitor)
+            editClickMonitor = nil
+        }
+        editField?.removeFromSuperview()
+        editField = nil
+        titleLabel.isHidden = false
     }
 
     /// Commits the current edit — fires the rename callback with the new title,
     /// then exits edit mode.
     private func commitEdit() {
-        let newTitle = titleLabel.stringValue.trimmingCharacters(in: .whitespaces)
+        let newTitle = (editField?.stringValue ?? titleLabel.stringValue)
+            .trimmingCharacters(in: .whitespaces)
         endEditing()
         onRename?(index, newTitle)
     }
@@ -498,9 +585,10 @@ extension TabItemView: NSTextFieldDelegate {
         return false
     }
 
-    /// Commit when the field loses focus (e.g. clicking elsewhere).
+    /// Do NOT commit on focus loss — other views (terminal, split-focus monitors)
+    /// routinely steal first responder. The keyDown monitor reclaims focus, and
+    /// the click-away monitor handles intentional dismissal.
     func controlTextDidEndEditing(_ obj: Notification) {
-        guard isEditing else { return }
-        commitEdit()
+        // Intentionally empty. See editClickMonitor.
     }
 }

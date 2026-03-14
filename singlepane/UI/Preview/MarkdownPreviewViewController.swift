@@ -20,6 +20,9 @@ final class MarkdownPreviewViewController: NSViewController {
     /// The file currently being previewed.
     private(set) var currentFileURL: URL?
 
+    /// Temp HTML file written for the current preview (cleaned up on next load).
+    private var tempPreviewURL: URL?
+
     /// Callback when user clicks a local folder link — navigates the file explorer.
     var onFolderLinkClicked: ((URL) -> Void)?
 
@@ -89,7 +92,7 @@ final class MarkdownPreviewViewController: NSViewController {
             let document = Document(parsing: truncatedText)
             let htmlBody = warningHTML + HTMLConverter.convert(document)
             let fullHTML = Self.wrapInHTMLPage(body: htmlBody)
-            webView.loadHTMLString(fullHTML, baseURL: url.deletingLastPathComponent())
+            loadHTMLWithFileAccess(fullHTML, relativeTo: url)
             return
         }
 
@@ -101,7 +104,42 @@ final class MarkdownPreviewViewController: NSViewController {
         let document = Document(parsing: markdownString)
         let htmlBody = HTMLConverter.convert(document)
         let fullHTML = Self.wrapInHTMLPage(body: htmlBody)
-        webView.loadHTMLString(fullHTML, baseURL: url.deletingLastPathComponent())
+        loadHTMLWithFileAccess(fullHTML, relativeTo: url)
+    }
+
+    /// Loads rendered HTML via a temp file so WKWebView has file-read access
+    /// for relative image paths. `loadHTMLString(_:baseURL:)` resolves relative
+    /// URLs but does not grant the web view permission to read local files.
+    /// Writing to a temp file and using `loadFileURL(_:allowingReadAccessTo:)`
+    /// grants access to the markdown file's directory tree.
+    private func loadHTMLWithFileAccess(_ html: String, relativeTo markdownURL: URL) {
+        cleanupTempPreview()
+
+        let directory = markdownURL.deletingLastPathComponent()
+        let tempURL = directory.appendingPathComponent(".singlepane-preview.html")
+
+        do {
+            try html.write(to: tempURL, atomically: true, encoding: .utf8)
+            tempPreviewURL = tempURL
+            webView.loadFileURL(tempURL, allowingReadAccessTo: directory)
+        } catch {
+            // Fall back to loadHTMLString if temp file write fails (e.g. read-only volume)
+            webView.loadHTMLString(html, baseURL: directory)
+        }
+    }
+
+    /// Removes the temp preview HTML file if one exists.
+    private func cleanupTempPreview() {
+        if let url = tempPreviewURL {
+            try? FileManager.default.removeItem(at: url)
+            tempPreviewURL = nil
+        }
+    }
+
+    deinit {
+        if let url = tempPreviewURL {
+            try? FileManager.default.removeItem(at: url)
+        }
     }
 
     /// Show a placeholder when no file is selected.

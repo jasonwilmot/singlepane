@@ -29,5 +29,8 @@ Package.resolved
 *.swp
 *~.nib
 
+# Markdown preview temp files
+.singlepane-preview.html
+
 # Xcode auto-generated
 xcuserdata/
