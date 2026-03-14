@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velocity — File Operations Dashboard</title>
+  <style>
+    :root {
+      --bg: #1e1e2e;;
+      --surface: #313244;
+      --text: #cdd6f4;
+      --muted: #6c7086;
+      --blue: #89b4fa;
+      --green: #a6e3a1;
+      --red: #f38ba8;
+      --yellow: #f9e2af;
+      --peach: #fab387;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --mono: "SF Mono", "Fira Code", monospaces;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-size: 28px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .card-value.blue { color: var(--blue); }
+    .card-value.green { color: var(--green); }
+    .card-value.red { color: var(--red); }
+    .card-value.peach { color: var(--peach); }
+
+    .card-detail {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--surface);
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(49, 50, 68, 0.5);
+      font-size: 13px;
+    }
+
+    tr:hover {
+      background: rgba(49, 50, 68, 0.3);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-running { background: rgba(137, 180, 250, 0.2); color: var(--blue); }
+    .badge-completed { background: rgba(166, 227, 161, 0.2); color: var(--green); }
+    .badge-failed { background: rgba(243, 139, 168, 0.2); color: var(--red); }
+    .badge-queued { background: rgba(249, 226, 175, 0.2); color: var(--yellow); }
+
+    .progress-track {
+      width: 120px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 300ms ease;
+    }
+
+    .mono {
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid var(--surface);
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>File Operations</h1>
+  <p class="subtitle">Active and recent operations across all panels</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">Active Operations</div>
+      <div class="card-value blue">3</div>
+      <div class="card-detail">2 copying, 1 moving</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Throughput</div>
+      <div class="card-value green">847 MB/s</div>
+      <div class="card-detail">Peak: 1.2 GB/s (APFS clone)</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Failed Today</div>
+      <div class="card-value red">2</div>
+      <div class="card-detail">Permission denied (2)</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Files Processed</div>
+      <div class="card-value peach">14,832</div>
+      <div class="card-detail">42.7 GB total</div>
+    </div>
+  </div>
+
+  <div class="section-title">Operation Queue</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Operation</th>
+        <th>Source</th>
+        <th>Destination</th>
+        <th>Status</th>
+        <th>Progress</th>
+        <th>Speed</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Copy</td>
+        <td class="mono">~/Projects/velocity/src</td>
+        <td class="mono">/Volumes/Backup/src</td>
+        <td><span class="badge badge-running">Running</span></td>
+        <td>
+          <div class="progress-track">
+            <div class="progress-fill" style="width: 67%; background: var(--blue);"></div>
+          </div>
+        </td>
+        <td class="mono">412 MB/s</td>
+      </tr>
+      <tr>
+        <td>Move</td>
+        <td class="mono">~/Downloads/*.dmg</td>
+        <td class="mono">~/Archive/installers</td>
+        <td><span class="badge badge-running">Running</span></td>
+        <td>
+          <div class="progress-track">
+            <div class="progress-fill" style="width: 23%; background: var(--blue);"></div>
+          </div>
+        </td>
+        <td class="mono">1.1 GB/s</td>
+      </tr>
+      <tr>
+        <td>Copy</td>
+        <td class="mono">/Volumes/Photos/2025</td>
+        <td class="mono">~/Pictures/2025</td>
+        <td><span class="badge badge-running">Running</span></td>
+        <td>
+          <div class="progress-track">
+            <div class="progress-fill" style="width: 91%; background: var(--blue);"></div>
+          </div>
+        </td>
+        <td class="mono">235 MB/s</td>
+      </tr>
+      <tr>
+        <td>Compress</td>
+        <td class="mono">~/Documents/reports</td>
+        <td class="mono">~/Desktop/reports.7z</td>
+        <td><span class="badge badge-queued">Queued</span></td>
+        <td>
+          <div class="progress-track">
+            <div class="progress-fill" style="width: 0%; background: var(--yellow);"></div>
+          </div>
+        </td>
+        <td class="mono">—</td>
+      </tr>
+      <tr>
+        <td>Delete</td>
+        <td class="mono">~/.Trash/*</td>
+        <td class="mono">—</td>
+        <td><span class="badge badge-completed">Completed</span></td>
+        <td>
+          <div class="progress-track">
+            <div class="progress-fill" style="width: 100%; background: var(--green);"></div>
+          </div>
+        </td>
+        <td class="mono">—</td>
+      </tr>
+      <tr>
+        <td>Copy</td>
+        <td class="mono">/etc/nginx</td>
+        <td class="mono">~/Backup/nginx</td>
+        <td><span class="badge badge-failed">Failed</span></td>
+        <td>
+          <div class="progress-track">
+            <div class="progress-fill" style="width: 12%; background: var(--red);"></div>
+          </div>
+        </td>
+        <td class="mono">—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <footer>
+    <span>Velocity v0.1.0 — File Operations Dashboard</span>
+    <span>Last refreshed: 2026-03-07 14:22:00</span>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+    "name": "Rose Pine",
+    "foreground": "#E0DEF4",
+    "background": "#191724",
+    "cursor": "#E0DEF4",
+    "cursorText": "#191724",
+    "selectionBackground": "#403D52",
+    "selectionForeground": "#E0DEF4",
+    "palette": [
+        "#26233A", "#EB6F92", "#31748F", "#F6C177",
+        "#9CCFD8", "#C4A7E7", "#EBBCBA", "#E0DEF4",
+        "#6E6A86", "#EB6F92", "#31748F", "#F6C177",
+        "#9CCFD8", "#C4A7E7", "#EBBCBA", "#E0DEF4"
+    ]
+}

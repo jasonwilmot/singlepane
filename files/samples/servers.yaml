@@ -1,0 +1,102 @@
+---
+project: velocity
+environment: development
+
+database:
+  primary:
+    host: localhost
+    port: 5432
+    name: velocity_dev
+    user: velocity
+    password: ${DB_PASSWORD}
+    pool:
+      min: 5
+      max: 20
+      idleTimeout: 30000
+    ssl:
+      enabled: false
+      rejectUnauthorized: true
+
+  search_index:
+    engine: sqlite
+    path: ~/Library/Application Support/Velocity/index.db
+    fts_version: 5
+    wal_mode: true
+    page_size: 4096
+    cache_size: -64000  # 64MB
+
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+  keyPrefix: "vel:"
+  maxRetries: 3
+  retryDelay: 1000
+
+services:
+  - name: file-watcher
+    enabled: true
+    config:
+      watchPaths:
+        - ~/Documents
+        - ~/Desktop
+        - ~/Downloads
+        - ~/Projects
+      ignoredPatterns:
+        - "*.DS_Store"
+        - ".git/**"
+        - "node_modules/**"
+        - "*.swp"
+        - "*.tmp"
+      debounceMs: 250
+      usePolling: false
+
+  - name: thumbnail-generator
+    enabled: true
+    config:
+      concurrency: 4
+      maxDimension: 256
+      formats:
+        - jpg
+        - png
+        - gif
+        - webp
+        - heic
+        - tiff
+      cacheDir: ~/Library/Caches/Velocity/thumbnails
+      maxCacheSize: 512MB
+      quality: 80
+
+  - name: cloud-mount
+    enabled: false
+    providers:
+      - type: s3
+        bucket: my-files
+        region: us-west-2
+        credentials: keychain://velocity/aws
+      - type: gcs
+        bucket: work-backup
+        project: my-project-id
+        credentials: keychain://velocity/gcp
+
+logging:
+  level: debug
+  outputs:
+    - type: console
+      colorize: true
+      format: pretty
+    - type: file
+      path: ~/Library/Logs/Velocity/app.log
+      maxSize: 10MB
+      maxFiles: 5
+      compress: true
+
+feature_flags:
+  dual_pane: true
+  terminal_integration: true
+  archive_browsing: true
+  batch_rename: false
+  folder_sync: false
+  hex_editor: true
+  drop_stack: false
+  cloud_mounting: false

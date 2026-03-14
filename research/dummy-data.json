@@ -1,0 +1,65 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Alice Chen",
+      "email": "alice.chen@example.com",
+      "role": "admin",
+      "active": true,
+      "joinedAt": "2024-06-15T09:30:00Z"
+    },
+    {
+      "id": 2,
+      "name": "Bob Martinez",
+      "email": "bob.martinez@example.com",
+      "role": "editor",
+      "active": true,
+      "joinedAt": "2024-08-22T14:15:00Z"
+    },
+    {
+      "id": 3,
+      "name": "Carol Nakamura",
+      "email": "carol.n@example.com",
+      "role": "viewer",
+      "active": false,
+      "joinedAt": "2025-01-10T11:00:00Z"
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-001",
+      "title": "Website Redesign",
+      "status": "in_progress",
+      "owner": 1,
+      "tags": ["frontend", "design"],
+      "budget": 45000,
+      "tasks": [
+        { "name": "Wireframes", "done": true },
+        { "name": "Visual design", "done": true },
+        { "name": "Implementation", "done": false }
+      ]
+    },
+    {
+      "id": "proj-002",
+      "title": "API Migration",
+      "status": "planned",
+      "owner": 2,
+      "tags": ["backend", "infrastructure"],
+      "budget": 72000,
+      "tasks": [
+        { "name": "Audit existing endpoints", "done": false },
+        { "name": "Design new schema", "done": false }
+      ]
+    }
+  ],
+  "settings": {
+    "theme": "dark",
+    "language": "en-US",
+    "notifications": {
+      "email": true,
+      "push": false,
+      "sms": false
+    },
+    "maxUploadSizeMB": 50
+  }
+}

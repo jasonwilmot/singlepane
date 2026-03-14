@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WorkspaceLayout name="Developer Default" version="1.0" author="velocity-team">
+
+  <MetaData>
+    <Created>2026-03-01T10:30:00Z</Created>
+    <Modified>2026-03-07T14:22:00Z</Modified>
+    <Description>Default workspace layout for software development workflows</Description>
+    <Tags>
+      <Tag>development</Tag>
+      <Tag>dual-pane</Tag>
+      <Tag>terminal</Tag>
+    </Tags>
+  </MetaData>
+
+  <Window width="1440" height="900" x="100" y="50" fullscreen="false">
+    <TitleBar style="hiddenInset" showTrafficLights="true" />
+    <Toolbar visible="true" style="compact">
+      <Item type="back" />
+      <Item type="forward" />
+      <Item type="separator" />
+      <Item type="pathBar" flex="1" />
+      <Item type="separator" />
+      <Item type="viewMode" />
+      <Item type="search" />
+    </Toolbar>
+  </Window>
+
+  <PanelLayout orientation="horizontal" dividerPosition="0.5">
+    <Panel id="left" role="primary">
+      <Browser>
+        <Path>~/Projects</Path>
+        <ViewMode>list</ViewMode>
+        <Sort field="name" order="ascending" foldersFirst="true" />
+        <Columns>
+          <Column name="icon" width="24" fixed="true" />
+          <Column name="name" width="280" minWidth="120" />
+          <Column name="size" width="80" alignment="right" />
+          <Column name="dateModified" width="140" format="relative" />
+          <Column name="kind" width="100" visible="false" />
+          <Column name="permissions" width="100" visible="false" />
+        </Columns>
+        <Filter active="false" pattern="" caseSensitive="false" />
+      </Browser>
+      <Tabs>
+        <Tab label="Projects" path="~/Projects" active="true" />
+        <Tab label="Documents" path="~/Documents" />
+        <Tab label="Desktop" path="~/Desktop" />
+      </Tabs>
+    </Panel>
+
+    <Panel id="right" role="secondary">
+      <Browser>
+        <Path>~/Downloads</Path>
+        <ViewMode>column</ViewMode>
+        <Sort field="dateModified" order="descending" foldersFirst="true" />
+        <Columns>
+          <Column name="icon" width="24" fixed="true" />
+          <Column name="name" width="240" minWidth="120" />
+          <Column name="size" width="80" alignment="right" />
+          <Column name="dateModified" width="140" format="absolute" />
+        </Columns>
+      </Browser>
+      <Tabs>
+        <Tab label="Downloads" path="~/Downloads" active="true" />
+        <Tab label="Trash" path="~/.Trash" />
+      </Tabs>
+    </Panel>
+  </PanelLayout>
+
+  <Modules>
+    <Module id="terminal" position="bottom" height="240" visible="true" collapsed="false">
+      <TerminalConfig>
+        <Shell>/bin/zsh</Shell>
+        <WorkingDirectory syncWithPanel="left" />
+        <Sessions>
+          <Session label="Shell 1" active="true" />
+          <Session label="Shell 2" />
+        </Sessions>
+      </TerminalConfig>
+    </Module>
+
+    <Module id="preview" position="right-sidebar" width="320" visible="false">
+      <PreviewConfig>
+        <AutoPreview>true</AutoPreview>
+        <MaxFileSize unit="MB">50</MaxFileSize>
+        <SyntaxHighlighting theme="catppuccin-mocha" />
+      </PreviewConfig>
+    </Module>
+
+    <Module id="git-status" position="left-sidebar" width="260" visible="true">
+      <GitConfig>
+        <AutoRefresh intervalSeconds="10" />
+        <ShowUntracked>true</ShowUntracked>
+        <ShowIgnored>false</ShowIgnored>
+      </GitConfig>
+    </Module>
+
+    <Module id="info" position="right-sidebar" width="280" visible="false">
+      <InfoConfig>
+        <ShowExtendedAttributes>true</ShowExtendedAttributes>
+        <ShowSpotlightMetadata>true</ShowSpotlightMetadata>
+        <ShowACLs>false</ShowACLs>
+      </InfoConfig>
+    </Module>
+  </Modules>
+
+  <Bookmarks>
+    <Bookmark label="Home" path="~" icon="house.fill" shortcut="Cmd+1" />
+    <Bookmark label="Projects" path="~/Projects" icon="folder.fill" shortcut="Cmd+2" />
+    <Bookmark label="Applications" path="/Applications" icon="app.fill" shortcut="Cmd+3" />
+    <Bookmark label="System" path="/" icon="internaldrive.fill" shortcut="Cmd+4" />
+    <Bookmark label="Network" path="/Network" icon="network" />
+  </Bookmarks>
+
+</WorkspaceLayout>

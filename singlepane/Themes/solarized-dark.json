@@ -1,0 +1,15 @@
+{
+    "name": "Solarized Dark",
+    "foreground": "#839496",
+    "background": "#002B36",
+    "cursor": "#839496",
+    "cursorText": "#073642",
+    "selectionBackground": "#073642",
+    "selectionForeground": "#93A1A1",
+    "palette": [
+        "#073642", "#DC322F", "#859900", "#B58900",
+        "#268BD2", "#D33682", "#2AA198", "#EEE8D5",
+        "#335E69", "#CB4B16", "#586E75", "#657B83",
+        "#839496", "#6C71C4", "#93A1A1", "#FDF6E3"
+    ]
+}

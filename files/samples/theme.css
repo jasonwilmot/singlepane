@@ -1,0 +1,322 @@
+/*
+ * Velocity File Manager — Catppuccin Mocha Theme
+ * A dark theme with warm pastels for the file browser UI
+ */
+
+:root {
+  /* Base palette */
+  --crust: #11111b;
+  --mantle: #181825;
+  --base: #1e1e2e;
+  --surface0: #313244;
+  --surface1: #45475a;
+  --surface2: #585b70;
+  --overlay0: #6c7086;
+  --overlay1: #7f849c;
+  --text: #cdd6f4;
+  --subtext0: #a6adc8;
+  --subtext1: #bac2de;
+  --lavender: #b4befe;
+  --blue: #89b4fa;
+  --sapphire: #74c7ec;
+  --sky: #89dceb;
+  --teal: #94e2d5;
+  --green: #a6e3a1;
+  --yellow: #f9e2af;
+  --peach: #fab387;
+  --maroon: #eba0ac;
+  --red: #f38ba8;
+  --mauve: #cba6f7;
+  --pink: #f5c2e7;
+  --flamingo: #f2cdcd;
+  --rosewater: #f5e0dc;
+
+  /* Semantic tokens */
+  --color-bg-primary: var(--base);
+  --color-bg-secondary: var(--mantle);
+  --color-bg-tertiary: var(--crust);
+  --color-bg-hover: var(--surface0);
+  --color-bg-selected: rgba(137, 180, 250, 0.15);
+  --color-bg-active: rgba(137, 180, 250, 0.25);
+  --color-text-primary: var(--text);
+  --color-text-secondary: var(--subtext0);
+  --color-text-muted: var(--overlay1);
+  --color-border: var(--surface0);
+  --color-border-focus: var(--lavender);
+  --color-accent: var(--blue);
+  --color-accent-hover: var(--sapphire);
+  --color-danger: var(--red);
+  --color-warning: var(--yellow);
+  --color-success: var(--green);
+  --color-info: var(--sky);
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "SF Mono", "Fira Code", "JetBrains Mono", monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 13px;
+  --font-size-lg: 15px;
+  --font-size-xl: 18px;
+
+  /* Transitions */
+  --transition-fast: 100ms ease-out;
+  --transition-normal: 200ms ease-out;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-full: 9999px;
+}
+
+/* ---- Global ---- */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-bg-active);
+  color: var(--color-text-primary);
+}
+
+/* ---- File List ---- */
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface1) transparent;
+}
+
+.file-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.file-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.file-list::-webkit-scrollbar-thumb {
+  background: var(--surface1);
+  border-radius: var(--radius-full);
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  height: 28px;
+  cursor: default;
+  user-select: none;
+  border-bottom: 1px solid transparent;
+  transition: background var(--transition-fast);
+}
+
+.file-row:hover {
+  background: var(--color-bg-hover);
+}
+
+.file-row.selected {
+  background: var(--color-bg-selected);
+}
+
+.file-row.selected:hover {
+  background: var(--color-bg-active);
+}
+
+.file-row.focused {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+.file-row.drop-target {
+  border-bottom: 2px solid var(--color-accent);
+}
+
+.file-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+}
+
+.file-name.directory {
+  font-weight: 600;
+}
+
+.file-name.symlink {
+  font-style: italic;
+  color: var(--teal);
+}
+
+.file-name.hidden-file {
+  color: var(--color-text-muted);
+}
+
+.file-size {
+  width: 70px;
+  text-align: right;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.file-date {
+  width: 130px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.file-permissions {
+  width: 90px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* ---- Column Headers ---- */
+
+.column-header {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-md);
+  height: 24px;
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.column-header .sort-indicator {
+  margin-left: var(--spacing-xs);
+  color: var(--color-accent);
+  font-size: 10px;
+}
+
+/* ---- Search Bar ---- */
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.search-input {
+  flex: 1;
+  background: var(--surface0);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.search-input:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px rgba(180, 190, 254, 0.15);
+}
+
+.search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* ---- Status Bar ---- */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px var(--spacing-md);
+  height: 22px;
+  background: var(--color-bg-tertiary);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.status-bar .selection-info {
+  color: var(--color-accent);
+}
+
+/* ---- Progress Bar ---- */
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--surface0);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-bar .fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--sapphire));
+  border-radius: var(--radius-full);
+  transition: width var(--transition-normal);
+}
+
+.progress-bar.error .fill {
+  background: var(--color-danger);
+}
+
+.progress-bar.success .fill {
+  background: var(--color-success);
+}
+
+/* ---- Keyboard shortcut badges ---- */
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--spacing-xs);
+  background: var(--surface0);
+  border: 1px solid var(--surface1);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  box-shadow: 0 1px 0 var(--surface1);
+}

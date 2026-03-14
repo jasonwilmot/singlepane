@@ -1,0 +1,119 @@
+{
+  "app" : {
+    "build" : 42,
+    "debug" : false,
+    "name" : "Velocity", dsd
+    "version" : "0.1.0"
+  },
+  "panels" : [f
+    {
+      "columns" : [
+        "name",
+        "size",
+        "dateModified",
+        "kind"
+      ],
+      "id" : "left",
+      "path" : "~/Documents",
+      "showHidden" : false,
+      "sortBy" : "name",
+      "sortOrder" : "asc",
+      "type" : "browser",
+      "viewMode" : "list"
+    },
+    {
+      "columns" : [
+        "name",
+        "size",
+        "dateModified"
+      ],
+      "id" : "right",
+      "path" : "~/Downloads",
+      "showHidden" : true,
+      "sortBy" : "dateModified",
+      "sortOrder" : "desc",
+      "type" : "browser",
+      "viewMode" : "column"
+    }
+  ],
+  "plugins" : [
+    {
+      "enabled" : true,
+      "id" : "git-status",
+      "version" : "1.0.0"
+    },
+    {
+      "enabled" : true,
+      "id" : "image-browser",
+      "version" : "0.9.2"
+    },
+    {
+      "enabled" : false,
+      "id" : "hex-viewer",
+      "version" : "0.8.1"
+    }
+  ],
+  "recentPaths" : [
+    "~/Projects/velocity",
+    "~/Documents/specs",
+    "/usr/local/etc",
+    "~/Library/Application Support"
+  ],
+  "search" : {
+    "contentSearchEnabled" : true,
+    "excludePatterns" : [
+      "node_modules",
+      ".git",
+      "*.DS_Store"
+    ],
+    "fuzzyMatchThreshold" : 0.59999999999999998,
+    "indexedVolumes" : [
+      "/",
+      "/Volumes/Data"
+    ],
+    "indexUpdateInterval" : 300,
+    "maxResults" : 10000
+  },
+  "shortcuts" : {
+    "commandPalette" : "Cmd+Shift+P",
+    "copy" : "F5",
+    "delete" : "F8",
+    "edit" : "F4",
+    "mkdir" : "F7",
+    "move" : "F6",
+    "search" : "Cmd+Shift+F",
+    "toggleDualPane" : "Cmd+D",
+    "toggleTerminal" : "Cmd+T",
+    "view" : "F3"
+  },
+  "terminal" : {
+    "cursorBlink" : true,
+    "cursorStyle" : "block",
+    "fontFamily" : "SF Mono",
+    "fontSize" : 13,
+    "scrollbackLines" : 10000,
+    "shell" : "/bin/zsh",
+    "theme" : {
+      "background" : "#1e1e2e",
+      "black" : "#45475a",
+      "blue" : "#89b4fa",
+      "cursor" : "#f5e0dc",
+      "cyan" : "#94e2d5",
+      "foreground" : "#cdd6f4",
+      "green" : "#a6e3a1",
+      "magenta" : "#f5c2e7",
+      "red" : "#f38ba8",
+      "selectionBackground" : "#585b7066",
+      "white" : "#bac2de",
+      "yellow" : "#f9e2af"
+    }
+  },
+  "window" : {
+    "height" : 800,
+    "minHeight" : 480,
+    "minWidth" : 640,
+    "titleBarStyle" : "hiddenInset",
+    "vibrancy" : "sidebar",
+    "width" : 1280
+  }
+}

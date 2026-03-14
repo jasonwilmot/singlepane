@@ -1,0 +1,15 @@
+{
+    "name": "Moonfly",
+    "foreground": "#BDBDBD",
+    "background": "#080808",
+    "cursor": "#8E8E8E",
+    "cursorText": "#080808",
+    "selectionBackground": "#B2CEEE",
+    "selectionForeground": "#080808",
+    "palette": [
+        "#323437", "#FF5D5D", "#8CC85F", "#E3C78A",
+        "#80A0FF", "#CF87E8", "#79DAC8", "#C6C6C6",
+        "#949494", "#FF5189", "#36C692", "#C6C684",
+        "#74B2FF", "#AE81FF", "#85DC85", "#E4E4E4"
+    ]
+}

@@ -1,0 +1,15 @@
+{
+    "name": "Cyberdream",
+    "foreground": "#FFFFFF",
+    "background": "#16181A",
+    "cursor": "#FFFFFF",
+    "cursorText": "#16181A",
+    "selectionBackground": "#3C4048",
+    "selectionForeground": "#FFFFFF",
+    "palette": [
+        "#16181A", "#FF6E5E", "#5EFF6C", "#F1FF5E",
+        "#5EA1FF", "#BD5EFF", "#5EF1FF", "#FFFFFF",
+        "#3C4048", "#FF6E5E", "#5EFF6C", "#F1FF5E",
+        "#5EA1FF", "#BD5EFF", "#5EF1FF", "#FFFFFF"
+    ]
+}

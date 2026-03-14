@@ -1,0 +1,15 @@
+{
+    "name": "Catppuccin Frappe",
+    "foreground": "#C6D0F5",
+    "background": "#303446",
+    "cursor": "#F2D5CF",
+    "cursorText": "#232634",
+    "selectionBackground": "#44495D",
+    "selectionForeground": "#C6D0F5",
+    "palette": [
+        "#51576D", "#E78284", "#A6D189", "#E5C890",
+        "#8CAAEE", "#F4B8E4", "#81C8BE", "#A5ADCE",
+        "#626880", "#E78284", "#A6D189", "#E5C890",
+        "#8CAAEE", "#F4B8E4", "#81C8BE", "#B5BFE2"
+    ]
+}
