@@ -59,7 +59,7 @@ actor FileService {
     @discardableResult
     func createFolder(in directory: URL) throws -> URL {
         let name = availableFolderName(in: directory, baseName: "untitled")
-        let folderURL = directory.appendingPathComponent(name)
+        let folderURL = directory.appendingPathComponent(name, isDirectory: true)
         try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: false)
         return folderURL
     }

@@ -116,7 +116,8 @@ final class MarkdownPreviewViewController: NSViewController {
         cleanupTempPreview()
 
         let directory = markdownURL.deletingLastPathComponent()
-        let tempURL = directory.appendingPathComponent(".singlepane-preview.html")
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("singlepane-preview-\(UUID().uuidString).html")
 
         do {
             try html.write(to: tempURL, atomically: true, encoding: .utf8)

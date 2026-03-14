@@ -431,10 +431,63 @@ final class PreviewContainerViewController: NSViewController, FilePanelSelection
         // Initial button state
         updateButtonVisibility()
 
+        // Update preview tabs when a file is renamed in the explorer
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleFileRenamed),
+            name: .fileDidRename,
+            object: nil
+        )
+
+        // Open newly created files in editor mode immediately
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleFileCreated),
+            name: .fileDidCreate,
+            object: nil
+        )
+
         // No file tabs open yet — hide file tab content, show placeholder
         fileTabBar.showTabContent = false
         showMode(.preview)
         markdownPreview.showPlaceholder()
+    }
+
+    /// Updates any open preview tab whose file was renamed.
+    @objc private func handleFileRenamed(_ notification: Notification) {
+        guard let oldURL = notification.userInfo?["oldURL"] as? URL,
+              let newURL = notification.userInfo?["newURL"] as? URL else { return }
+
+        for (i, tab) in tabs.enumerated() {
+            if tab.fileURL == oldURL {
+                tab.fileURL = newURL
+                fileTabBar.updateTabTitle(newURL.lastPathComponent, at: i)
+
+                if i == activeTabIndex {
+                    lastSelectedFileURL = newURL
+                }
+                break
+            }
+        }
+    }
+
+    /// Switches a newly created file's preview tab to editor mode.
+    @objc private func handleFileCreated(_ notification: Notification) {
+        guard let fileURL = notification.userInfo?["fileURL"] as? URL else { return }
+
+        // Find the tab for this file (filePanelDidSelect already created it)
+        guard let tabIndex = tabs.firstIndex(where: { $0.fileURL == fileURL }) else { return }
+
+        let tab = tabs[tabIndex]
+        tab.userChoseEditor = true
+        tab.mode = .editor
+
+        // If this is the active tab, switch the view to editor mode now
+        if tabIndex == activeTabIndex {
+            userChoseEditor = true
+            switchToEditor(for: fileURL)
+            updateButtonVisibility()
+        }
     }
 
     // MARK: - Button Visibility

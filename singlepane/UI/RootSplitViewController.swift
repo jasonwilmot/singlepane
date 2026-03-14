@@ -25,8 +25,6 @@ final class RootSplitViewController: NSSplitViewController, PanelShiftDelegate {
     /// Prevents manual-resize callback from firing during snap animations.
     private var isApplyingLayout = false
 
-    /// Grip overlay views on dividers.
-    private var dividerGrips: [DividerGripView] = []
 
     // MARK: - Focus Tracking
 
@@ -79,11 +77,21 @@ final class RootSplitViewController: NSSplitViewController, PanelShiftDelegate {
 
     // MARK: - Lifecycle
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
+    /// Sets up the themed split view and adds all panel items before the view
+    /// hierarchy is fully constructed. NSSplitViewController requires splitView
+    /// to be assigned before the view loads, and _setupSplitView (called by
+    /// super.viewDidLoad) requires items to already be present.
+    override func loadView() {
+        let themedSV = ThemedSplitView()
+        themedSV.isVertical = true
+        themedSV.wantsLayer = true
+        splitView = themedSV
+        super.loadView()
+    }
 
-        // Build ALL columns in the order specified by configuration.
-        // All panels are always created — visibility is controlled via isCollapsed.
+    override func viewDidLoad() {
+        // Add all split view items BEFORE super.viewDidLoad(), because
+        // super calls _setupSplitView which expects items to exist.
         var explorerVC: DualPaneExplorerViewController?
         var previewVC: PreviewContainerViewController?
 
@@ -91,32 +99,25 @@ final class RootSplitViewController: NSSplitViewController, PanelShiftDelegate {
             let viewController = makeViewController(for: panelType)
             let item = NSSplitViewItem(viewController: viewController)
 
-            // Set minimum thickness per panel
             item.minimumThickness = Self.minWidths[panelType] ?? 200
-
-            // Equal holding priority — every panel is resizable from either divider
             item.holdingPriority = Self.holdingPriority
-
-            // Allow collapsing for snap-to-layout support
             item.canCollapse = true
             item.isCollapsed = !configuration.isVisible(panelType)
 
             addSplitViewItem(item)
             panelItems[panelType] = item
 
-            // Track explorer and preview for wiring
             if let vc = viewController as? DualPaneExplorerViewController { explorerVC = vc }
             if let vc = viewController as? PreviewContainerViewController { previewVC = vc }
         }
+
+        super.viewDidLoad()
 
         // Wire file selection in explorer to preview panel
         if let explorer = explorerVC, let preview = previewVC {
             explorer.wireSelectionDelegate(preview)
         }
 
-        // Install visible grip overlays on dividers
-        splitView.wantsLayer = true
-        dividerGrips = installDividerGrips()
         applyTheme()
         startObservingTheme()
 
@@ -742,7 +743,7 @@ final class RootSplitViewController: NSSplitViewController, PanelShiftDelegate {
 
     /// Applies the active theme to the split view dividers.
     private func applyTheme() {
-        dividerGrips.forEach { $0.needsDisplay = true }
+        splitView.needsDisplay = true
     }
 
     /// Watches ThemeManager for changes and re-applies divider color.

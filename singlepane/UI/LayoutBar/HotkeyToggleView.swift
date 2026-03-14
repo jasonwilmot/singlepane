@@ -25,6 +25,9 @@ final class HotkeyToggleView: NSView {
     /// Timer to auto-clear error messages.
     private var errorTimer: Timer?
 
+    /// Local event monitor for key capture during recording.
+    nonisolated(unsafe) private var keyMonitor: Any?
+
     /// Called when the hotkey binding changes (set or cleared).
     var onHotkeyChanged: (() -> Void)?
 
@@ -115,38 +118,46 @@ final class HotkeyToggleView: NSView {
 
     // MARK: - Key Capture
 
-    /// Accept first responder so we can receive keyDown events during recording.
-    override var acceptsFirstResponder: Bool { isRecording }
+    /// Installs a local event monitor to capture key events during recording.
+    private func installKeyMonitor() {
+        removeKeyMonitor()
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
+            [weak self] event in
+            guard let self, self.isRecording else { return event }
 
-    override func keyDown(with event: NSEvent) {
-        guard isRecording else {
-            super.keyDown(with: event)
-            return
+            // Escape cancels recording
+            if event.keyCode == 53 {
+                self.isRecording = false
+                self.removeKeyMonitor()
+                return nil
+            }
+
+            let binding = HotkeyBinding(keyCode: event.keyCode, modifierFlags: event.modifierFlags)
+            let result = LayoutHotkeyManager.shared.validate(binding: binding, for: self.layoutID)
+
+            switch result {
+            case .valid:
+                LayoutHotkeyManager.shared.setHotkey(for: self.layoutID, binding: binding)
+                self.isRecording = false
+                self.removeKeyMonitor()
+                self.onHotkeyChanged?()
+
+            case .dangerous(let reason):
+                self.showError(reason)
+
+            case .conflict(let existingID):
+                let name = LayoutHotkeyManager.shared.displayName(for: existingID)
+                self.showError("Used by \"\(name)\"")
+            }
+
+            return nil // Consume during recording
         }
+    }
 
-        // Escape cancels recording
-        if event.keyCode == 53 {
-            isRecording = false
-            window?.makeFirstResponder(nil)
-            return
-        }
-
-        let binding = HotkeyBinding(keyCode: event.keyCode, modifierFlags: event.modifierFlags)
-        let result = LayoutHotkeyManager.shared.validate(binding: binding, for: layoutID)
-
-        switch result {
-        case .valid:
-            LayoutHotkeyManager.shared.setHotkey(for: layoutID, binding: binding)
-            isRecording = false
-            window?.makeFirstResponder(nil)
-            onHotkeyChanged?()
-
-        case .dangerous(let reason):
-            showError(reason)
-
-        case .conflict(let existingID):
-            let name = LayoutHotkeyManager.shared.displayName(for: existingID)
-            showError("Used by \"\(name)\"")
+    private func removeKeyMonitor() {
+        if let monitor = keyMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyMonitor = nil
         }
     }
 
@@ -156,7 +167,7 @@ final class HotkeyToggleView: NSView {
         if isRecording {
             // Click while recording → cancel
             isRecording = false
-            window?.makeFirstResponder(nil)
+            removeKeyMonitor()
             return
         }
 
@@ -168,7 +179,7 @@ final class HotkeyToggleView: NSView {
         } else {
             // Unbound → start recording
             isRecording = true
-            window?.makeFirstResponder(self)
+            installKeyMonitor()
         }
     }
 
@@ -193,12 +204,11 @@ final class HotkeyToggleView: NSView {
         }
     }
 
-    // MARK: - Resign
+    // MARK: - Cleanup
 
-    override func resignFirstResponder() -> Bool {
-        if isRecording {
-            isRecording = false
+    deinit {
+        if let monitor = keyMonitor {
+            NSEvent.removeMonitor(monitor)
         }
-        return super.resignFirstResponder()
     }
 }

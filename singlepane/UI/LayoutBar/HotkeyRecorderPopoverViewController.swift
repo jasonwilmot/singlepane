@@ -23,6 +23,11 @@ final class HotkeyRecorderPopoverViewController: NSViewController {
     /// Whether we are actively listening for the next key combo.
     private var isRecording = false
 
+    /// Local event monitor that intercepts key events before AppKit dispatch.
+    /// Required because Cmd-based shortcuts route through performKeyEquivalent
+    /// (menus, views) before keyDown, so keyDown never fires for them.
+    nonisolated(unsafe) private var keyMonitor: Any?
+
     // MARK: - UI Elements
 
     private let hotkeyLabel = NSTextField(labelWithString: "")
@@ -155,8 +160,7 @@ final class HotkeyRecorderPopoverViewController: NSViewController {
         isRecording = true
         errorLabel.isHidden = true
         updateUI()
-        // Make this view first responder to capture key events
-        view.window?.makeFirstResponder(view)
+        installKeyMonitor()
     }
 
     @objc private func deleteHotkeyClicked() {
@@ -173,45 +177,60 @@ final class HotkeyRecorderPopoverViewController: NSViewController {
 
     // MARK: - Key Capture
 
-    override func keyDown(with event: NSEvent) {
-        guard isRecording else {
-            super.keyDown(with: event)
-            return
-        }
+    /// Installs a local event monitor to capture key events during recording.
+    /// This intercepts before AppKit's performKeyEquivalent dispatch, which
+    /// is necessary because Cmd-based shortcuts never reach keyDown.
+    private func installKeyMonitor() {
+        removeKeyMonitor()
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
+            [weak self] event in
+            guard let self, self.isRecording else { return event }
 
-        // Escape cancels recording
-        if event.keyCode == 53 {
-            isRecording = false
-            errorLabel.isHidden = true
-            updateUI()
-            return
-        }
+            // Escape cancels recording
+            if event.keyCode == 53 {
+                self.isRecording = false
+                self.errorLabel.isHidden = true
+                self.updateUI()
+                self.removeKeyMonitor()
+                return nil
+            }
 
-        let binding = HotkeyBinding(keyCode: event.keyCode, modifierFlags: event.modifierFlags)
+            let binding = HotkeyBinding(keyCode: event.keyCode, modifierFlags: event.modifierFlags)
+            let result = LayoutHotkeyManager.shared.validate(binding: binding, for: self.layoutID)
 
-        // Validate the proposed binding
-        let result = LayoutHotkeyManager.shared.validate(binding: binding, for: layoutID)
+            switch result {
+            case .valid:
+                LayoutHotkeyManager.shared.setHotkey(for: self.layoutID, binding: binding)
+                self.isRecording = false
+                self.errorLabel.isHidden = true
+                self.updateUI()
+                self.removeKeyMonitor()
+                self.onHotkeyChanged?()
 
-        switch result {
-        case .valid:
-            LayoutHotkeyManager.shared.setHotkey(for: layoutID, binding: binding)
-            isRecording = false
-            errorLabel.isHidden = true
-            updateUI()
-            onHotkeyChanged?()
+            case .dangerous(let reason):
+                self.errorLabel.stringValue = reason
+                self.errorLabel.isHidden = false
 
-        case .dangerous(let reason):
-            errorLabel.stringValue = reason
-            errorLabel.isHidden = false
+            case .conflict(let existingID):
+                let name = LayoutHotkeyManager.shared.displayName(for: existingID)
+                self.errorLabel.stringValue = "Already assigned to \"\(name)\""
+                self.errorLabel.isHidden = false
+            }
 
-        case .conflict(let existingID):
-            let name = LayoutHotkeyManager.shared.displayName(for: existingID)
-            errorLabel.stringValue = "Already assigned to \"\(name)\""
-            errorLabel.isHidden = false
+            return nil // Consume the event during recording
         }
     }
 
-    // Accept first responder so we can receive keyDown events
-    override var acceptsFirstResponder: Bool { true }
-    override func becomeFirstResponder() -> Bool { true }
+    private func removeKeyMonitor() {
+        if let monitor = keyMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyMonitor = nil
+        }
+    }
+
+    deinit {
+        if let monitor = keyMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+    }
 }

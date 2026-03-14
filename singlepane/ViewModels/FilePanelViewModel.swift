@@ -272,8 +272,13 @@ final class FilePanelViewModel {
     /// Renames a file and reloads the directory.
     func renameFile(from sourceURL: URL, to newName: String) async {
         do {
-            _ = try await fileService.renameFile(from: sourceURL, to: newName)
+            let newURL = try await fileService.renameFile(from: sourceURL, to: newName)
             await loadDirectory()
+            NotificationCenter.default.post(
+                name: .fileDidRename,
+                object: nil,
+                userInfo: ["oldURL": sourceURL, "newURL": newURL]
+            )
         } catch {
             NSLog("File rename failed: \(error.localizedDescription)")
         }

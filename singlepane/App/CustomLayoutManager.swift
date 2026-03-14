@@ -47,8 +47,11 @@ final class CustomLayoutManager {
     // MARK: - Delete
 
     /// Deletes the custom layout at the given index.
+    /// Also removes any hotkey binding for the layout to prevent orphaned bindings.
     func delete(at index: Int) {
         guard customLayouts.indices.contains(index) else { return }
+        let layoutID = customLayouts[index].id.uuidString
+        LayoutHotkeyManager.shared.removeHotkey(for: layoutID)
         customLayouts.remove(at: index)
         persist()
     }

@@ -203,12 +203,6 @@ final class WorkspaceViewController: NSViewController, LayoutBarDelegate {
     }
 
     func layoutBarDidRequestDeleteCustomLayout(at index: Int) {
-        // Remove any hotkey binding before deleting the layout
-        let layouts = CustomLayoutManager.shared.customLayouts
-        if layouts.indices.contains(index) {
-            LayoutHotkeyManager.shared.removeHotkey(for: layouts[index].id.uuidString)
-        }
-
         CustomLayoutManager.shared.delete(at: index)
         layoutBar.reloadCustomLayouts()
     }

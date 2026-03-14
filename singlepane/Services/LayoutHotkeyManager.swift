@@ -151,6 +151,7 @@ final class LayoutHotkeyManager {
 
     private init() {
         load()
+        purgeOrphanedBindings()
     }
 
     // MARK: - Query
@@ -268,7 +269,28 @@ final class LayoutHotkeyManager {
     }
 
     private func persist() {
-        guard let data = try? JSONEncoder().encode(bindings) else { return }
-        UserDefaults.standard.set(data, forKey: Self.storageKey)
+        if bindings.isEmpty {
+            UserDefaults.standard.removeObject(forKey: Self.storageKey)
+        } else {
+            guard let data = try? JSONEncoder().encode(bindings) else { return }
+            UserDefaults.standard.set(data, forKey: Self.storageKey)
+        }
+        UserDefaults.standard.synchronize()
+    }
+
+    /// Removes hotkey bindings for layouts that no longer exist.
+    /// Runs on init to clean up orphans left by deleted custom layouts.
+    private func purgeOrphanedBindings() {
+        let customIDs = Set(CustomLayoutManager.shared.customLayouts.map(\.id.uuidString))
+        let presetIDs = Set(SnapLayout.allCases.map(\.rawValue))
+        let validIDs = customIDs.union(presetIDs)
+
+        let orphans = bindings.keys.filter { !validIDs.contains($0) }
+        guard !orphans.isEmpty else { return }
+
+        for key in orphans {
+            bindings.removeValue(forKey: key)
+        }
+        persist()
     }
 }

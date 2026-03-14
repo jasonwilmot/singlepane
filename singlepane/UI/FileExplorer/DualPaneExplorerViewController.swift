@@ -18,12 +18,15 @@ final class DualPaneExplorerViewController: NSSplitViewController {
 
     // MARK: - Lifecycle
 
+    override func loadView() {
+        let themedSV = ThemedSplitView()
+        themedSV.isVertical = false  // horizontal split (top/bottom panes stacked vertically)
+        themedSV.wantsLayer = true
+        splitView = themedSV
+        super.loadView()
+    }
+
     override func viewDidLoad() {
-        super.viewDidLoad()
-
-        // Horizontal split (top and bottom panes stacked vertically)
-        splitView.isVertical = false
-
         // Default directory for both panes
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSHomeDirectory())
@@ -48,9 +51,7 @@ final class DualPaneExplorerViewController: NSSplitViewController {
         bottomItem.canCollapse = true
         addSplitViewItem(bottomItem)
 
-        // Install visible grip overlay on the divider
-        splitView.wantsLayer = true
-        installDividerGrips()
+        super.viewDidLoad()
     }
 
     private var hasAppliedInitialProportions = false

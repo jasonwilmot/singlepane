@@ -315,8 +315,17 @@ final class TabItemView: NSView {
     private func updateTabBorders(color: CGColor, thickness: CGFloat = 1) {
         guard let layer else { return }
 
-        // Remove previous border layers
-        layer.sublayers?.removeAll { $0.name == "tabBorder" }
+        // Suppress implicit animations so border updates are instant during
+        // rapid layout changes (tab add/remove/resize). Without this,
+        // Core Animation may interpolate between old and new positions.
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+
+        // Remove previous border layers — use removeFromSuperlayer() instead of
+        // sublayers?.removeAll(where:) because the latter mutates a bridged ObjC
+        // array via optional chaining, which can silently fail to write back,
+        // leaving stale border CALayers at old positions (visible as ghost lines).
+        layer.sublayers?.filter { $0.name == "tabBorder" }.forEach { $0.removeFromSuperlayer() }
 
         let bounds = layer.bounds
 
@@ -348,6 +357,8 @@ final class TabItemView: NSView {
             layer.addSublayer(right)
             layer.addSublayer(top)
         }
+
+        CATransaction.commit()
     }
 
     override func layout() {

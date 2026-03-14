@@ -12,7 +12,7 @@ import AppKit
 final class PreviewTabState {
 
     /// The file this tab represents.
-    let fileURL: URL
+    var fileURL: URL
 
     /// Current preview/edit mode for this tab.
     var mode: PreviewTabMode = .preview

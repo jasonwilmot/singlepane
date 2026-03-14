@@ -14,6 +14,13 @@ extension Notification.Name {
     /// Posted after a drag-and-drop file operation completes.
     /// All file panels observe this to refresh their listings.
     static let fileOperationDidComplete = Notification.Name("fileOperationDidComplete")
+
+    /// Posted after a file is renamed. userInfo contains "oldURL" and "newURL" keys.
+    static let fileDidRename = Notification.Name("fileDidRename")
+
+    /// Posted after a new file is created. userInfo contains "fileURL" key.
+    /// The preview panel uses this to open the file in editor mode immediately.
+    static let fileDidCreate = Notification.Name("fileDidCreate")
 }
 
 /// Delegate protocol for notifying parent when a file is selected.
@@ -1268,9 +1275,16 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
         // Reload table synchronously so the new row is available for cell access
         fileTableView.reloadData()
 
-        // Select the row
+        // Select the row (triggers filePanelDidSelect → preview opens the file)
         fileTableView.selectRowIndexes(IndexSet(integer: rowIndex), byExtendingSelection: false)
         fileTableView.scrollRowToVisible(rowIndex)
+
+        // Tell the preview panel to open this file in editor mode
+        NotificationCenter.default.post(
+            name: .fileDidCreate,
+            object: nil,
+            userInfo: ["fileURL": fileURL]
+        )
 
         // Begin inline rename after layout pass completes so the cell view exists
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
