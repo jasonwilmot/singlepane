@@ -52,10 +52,10 @@ Choose from 9 voice packs and 3 sound packs, or mute individual events. You also
 **Preview the sounds:**
 
 🔔 Notification
-<video src="assets/audio/notification-sample.mp4" controls width="600" height="60"></video>
+<video src="https://github.com/jasonwilmot/singlepane/raw/main/assets/audio/notification-sample.mp4" controls width="600" height="60"></video>
 
 🤖 Subagent spawned
-<video src="assets/audio/subagent-sample.mp4" controls width="600" height="60"></video>
+<video src="https://github.com/jasonwilmot/singlepane/raw/main/assets/audio/subagent-sample.mp4" controls width="600" height="60"></video>
 
 ---
 
