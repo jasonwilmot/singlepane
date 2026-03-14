@@ -14,8 +14,6 @@ Single Pane is a native macOS app that puts your terminal, file explorer, and fi
 
 A full terminal built into your workspace. Run Claude Code, manage processes, and work across multiple sessions without switching apps.
 
-![Terminal](assets/screenshots/terminal.png)
-
 **Tabbed sessions** — Open as many terminal tabs as you need. Each session runs independently with its own shell. Tabs can run horizontally across the top or vertically along the side — switch between layouts with a click.
 
 ![Horizontal tabs](assets/screenshots/terminal-tabs-horizontal.png)
@@ -55,6 +53,8 @@ Choose from 9 voice packs and 3 sound packs, or mute individual events. You also
 
 **Preview the sounds:**
 
+![Voice Packs](assets/screenshots/voice-packs.png)
+
 🔔 Notification — [▶ Play](assets/audio/notification-sample.mp3)
 
 🤖 Subagent spawned — [▶ Play](assets/audio/subagent-sample.mp3)
@@ -65,7 +65,7 @@ Choose from 9 voice packs and 3 sound packs, or mute individual events. You also
 
 A dual-pane file browser with tabs, built for navigating projects quickly.
 
-![File Explorer](assets/screenshots/file-explorer.png)
+![Dual Pane File Explorer](assets/screenshots/dual-pane.png)
 
 **Dual panes with unlimited tabs** — The familiar dual-pane interface simplifies managing multiple folders and directories, making it easy to transfer files between them efficiently. Open your source in one pane and your destination in the other, then copy or move files with a single keystroke. Each pane supports as many tabs as you need, so you can keep multiple directories accessible without losing your place.
 
