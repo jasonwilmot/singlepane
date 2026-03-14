@@ -16,7 +16,11 @@ A full terminal built into your workspace. Run Claude Code, manage processes, an
 
 ![Terminal](assets/screenshots/terminal.png)
 
-**Tabbed sessions** — Open as many terminal tabs as you need. Each session runs independently with its own shell.
+**Tabbed sessions** — Open as many terminal tabs as you need. Each session runs independently with its own shell. Tabs can run horizontally across the top or vertically along the side — switch between layouts with a click.
+
+![Horizontal tabs](assets/screenshots/terminal-tabs-horizontal.png)
+
+![Vertical tabs](assets/screenshots/terminal-tabs-vertical.png)
 
 **Split panes and grid view** — Run sessions side by side in splits, or switch to grid view to see all your sessions at once. Perfect for monitoring multiple Claude Code instances in parallel.
 
