@@ -30,7 +30,7 @@ Package.resolved
 *~.nib
 
 # Markdown preview temp files
-.singlepane-preview.html
+.singlepane-preview*.html
 
 # Xcode auto-generated
 xcuserdata/
