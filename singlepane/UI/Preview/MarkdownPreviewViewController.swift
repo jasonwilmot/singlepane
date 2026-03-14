@@ -116,8 +116,11 @@ final class MarkdownPreviewViewController: NSViewController {
         cleanupTempPreview()
 
         let directory = markdownURL.deletingLastPathComponent()
-        let tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("singlepane-preview-\(UUID().uuidString).html")
+
+        // Write the temp file inside the markdown's directory so WKWebView's
+        // allowingReadAccessTo: covers both the HTML and relative image paths.
+        // The dot-prefix hides it from Finder; the file service filters it from listings.
+        let tempURL = directory.appendingPathComponent(".singlepane-preview-\(ProcessInfo.processInfo.processIdentifier).html")
 
         do {
             try html.write(to: tempURL, atomically: true, encoding: .utf8)

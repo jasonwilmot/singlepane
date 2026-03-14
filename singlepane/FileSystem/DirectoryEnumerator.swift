@@ -25,8 +25,9 @@ enum DirectoryEnumerator: Sendable {
         while let entry = readdir(dir) {
             let name = extractName(from: entry)
 
-            // Skip current and parent directory entries
+            // Skip current/parent directory entries and preview temp files
             if name == "." || name == ".." { continue }
+            if name.hasPrefix(".singlepane-preview") && name.hasSuffix(".html") { continue }
 
             let fullPath = path + "/" + name
 

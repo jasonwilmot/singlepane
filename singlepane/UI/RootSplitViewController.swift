@@ -193,6 +193,14 @@ final class RootSplitViewController: NSSplitViewController, PanelShiftDelegate {
 
         splitView.adjustSubviews()
         equalizeVisiblePanels()
+
+        // Force full redraw to clear divider artifacts from the previous layout.
+        // NSSplitView doesn't invalidate old divider positions when panels collapse.
+        splitView.needsDisplay = true
+        for item in splitViewItems {
+            item.viewController.view.needsDisplay = true
+        }
+
         isApplyingLayout = false
         updateAllShiftArrows()
     }
@@ -217,6 +225,12 @@ final class RootSplitViewController: NSSplitViewController, PanelShiftDelegate {
 
         splitView.adjustSubviews()
         applyWidthRatios(layout.panelWidthRatios)
+
+        splitView.needsDisplay = true
+        for item in splitViewItems {
+            item.viewController.view.needsDisplay = true
+        }
+
         isApplyingLayout = false
         updateAllShiftArrows()
     }

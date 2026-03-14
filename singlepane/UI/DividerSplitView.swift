@@ -17,6 +17,10 @@ final class ThemedSplitView: NSSplitView {
     override var dividerThickness: CGFloat { 4 }
 
     override func drawDivider(in rect: NSRect) {
+        // Skip drawing if the divider rect has been collapsed to zero
+        // (happens when adjacent panels are collapsed by NSSplitViewController).
+        if rect.width < 1 && rect.height < 1 { return }
+
         let theme = ThemeManager.shared.activeTheme
 
         // Opaque 1px line blended from the theme — visible in both dark and light modes

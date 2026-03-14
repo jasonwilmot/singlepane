@@ -38,6 +38,33 @@ final class FileListTableView: NSTableView {
         }
     }
 
+    // MARK: - Background Drawing
+
+    /// Only draw alternating row backgrounds for rows that contain data.
+    /// The default implementation draws zebra stripes for the entire visible
+    /// area, creating phantom rows below the actual content.
+    override func drawBackground(inClipRect clipRect: NSRect) {
+        let bg = ThemeManager.shared.activeTheme.backgroundColor
+        bg.setFill()
+        clipRect.fill()
+
+        guard usesAlternatingRowBackgroundColors, numberOfRows > 0 else { return }
+
+        let visibleRows = rows(in: clipRect)
+        let clampedEnd = min(visibleRows.location + visibleRows.length, numberOfRows)
+
+        for row in visibleRows.location..<clampedEnd {
+            if row % 2 == 1 {
+                let rowRect = rect(ofRow: row)
+                let intersection = rowRect.intersection(clipRect)
+                if !intersection.isNull {
+                    bg.blended(withFraction: 0.04, of: .white)?.setFill()
+                    intersection.fill()
+                }
+            }
+        }
+    }
+
     // MARK: - Key Handling
 
     override func keyDown(with event: NSEvent) {
