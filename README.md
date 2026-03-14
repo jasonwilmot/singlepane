@@ -77,7 +77,7 @@ A dual-pane file browser with tabs, built for navigating projects quickly.
 
 **Full-text search** — Search across filenames and file contents from the breadcrumb bar. Toggle between filename and content search, enable regex matching, and switch case sensitivity. Results stream in as they're found.
 
-![Full-Text Search](assets/screenshots/search.png)
+![Full-Text Search](assets/screenshots/full-text-search.png)
 
 **Live updates** — When files change on disk, the explorer updates automatically. No manual refresh needed.
 
@@ -105,7 +105,7 @@ Preview and edit files without leaving Single Pane. Markdown, code, images, PDFs
 
 **Heading outline** — A collapsible outline panel shows all headings in the current markdown file. Click any heading to jump to it. The outline highlights your current position as you scroll.
 
-![Markdown Outline](assets/screenshots/outline.png)
+![Markdown Outline](assets/screenshots/markdown-outline.png)
 
 **Syntax highlighting** — Code files are displayed with syntax highlighting for Swift, JavaScript, TypeScript, Python, Ruby, Rust, Go, C, C++, SQL, Shell, JSON, YAML, TOML, XML, and more. Colors follow your active theme.
 
