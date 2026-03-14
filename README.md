@@ -28,13 +28,17 @@ A full terminal built into your workspace. Run Claude Code, manage processes, an
 
 **Hints mode** — Press `Cmd+Shift+E` to highlight every URL, file path, and reference visible in the terminal. Type the hint label to open it, or hold `Shift` to copy it to your clipboard.
 
+![Hints Mode](assets/screenshots/hints-mode.png)
+
 **Find in terminal** — Press `Cmd+F` to search through terminal output. Navigate between matches with `Enter` and `Shift+Enter`.
 
 **Command status at a glance** — The gutter shows success and failure indicators for each command, so you can scan your history and spot errors instantly.
 
 ### Claude Code Audio Hooks
 
-Single Pane plays audio cues when Claude Code events happen in your terminal sessions, so you know what's going on without watching the screen. Each event triggers a distinct sound:
+Single Pane plays audio cues and sends macOS system notifications when Claude Code events happen in your terminal sessions, so you know what's going on without watching the screen. Each event triggers a distinct sound:
+
+![System Notification](assets/screenshots/notification.png)
 
 | Event | When it plays |
 |-------|---------------|
