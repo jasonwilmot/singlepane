@@ -617,9 +617,11 @@ final class TabBarView: NSView {
     /// Use when the caller is already handling the mode/content switch itself.
     func selectTabVisually(at index: Int) {
         guard index >= 0, index < tabItems.count else { return }
+        isGrouped = false
         selectedIndex = index
         selectedIndices = [index]
         updateSelectionAppearance()
+        updateButtonVisibility()
         setFocusedTab(at: index)
         scrollToTab(at: index)
     }

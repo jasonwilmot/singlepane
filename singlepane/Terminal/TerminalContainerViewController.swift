@@ -104,11 +104,8 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
     /// a click (same position) from a drag/selection (different position).
     private var mouseDownGridPosition: (session: UUID, row: Int, col: Int)?
 
-    /// Timer that periodically scans visible terminal rows for links.
+    /// Timer that periodically refreshes gutter views (exit code indicators).
     nonisolated(unsafe) private var linkScanTimer: Timer?
-
-    /// Per-session link overlays — one per visible terminal pane.
-    private var linkOverlays: [UUID: TerminalLinkOverlayView] = [:]
 
     /// Per-session exit code gutters — one per visible terminal pane.
     private var gutterViews: [UUID: TerminalGutterView] = [:]
@@ -513,7 +510,6 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         sessionManager.switchTo(index)
         showSingleTerminal(at: index)
         syncFindBarForActiveSession()
-        scanVisibleLinks()
     }
 
     func tabBarDidGroupAllTabs(_ indices: Set<Int>) {
@@ -522,7 +518,6 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         sessionManager.showMultiple(indices: indices)
         buildSplitView(indices: indices)
         applyFocusAppearance()
-        scanVisibleLinks()
     }
 
     func tabBarDidUngroupTabs(focusedIndex: Int) {
@@ -532,7 +527,6 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         sessionManager.switchTo(focusedIndex)
         showSingleTerminal(at: focusedIndex)
         syncFindBarForActiveSession()
-        scanVisibleLinks()
     }
 
     func tabBarDidFocusTab(at index: Int) {
@@ -550,7 +544,6 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         if sessionManager.visibleIndices.count > 1 {
             buildSplitView(indices: sessionManager.visibleIndices)
             applyFocusAppearance()
-            scanVisibleLinks()
         }
     }
 
@@ -612,7 +605,6 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         if sessionManager.visibleIndices.count > 1 {
             buildSplitView(indices: sessionManager.visibleIndices)
             applyFocusAppearance()
-            scanVisibleLinks()
         }
     }
 
@@ -865,7 +857,6 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         splitView = nil
         gridContainer?.removeFromSuperview()
         gridContainer = nil
-        linkOverlays.removeAll()
     }
 
     /// Distributes equal space to each pane in the split view.
@@ -1256,61 +1247,13 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
             return event
         }
 
-        // Periodic scan of visible rows to keep persistent underlines and gutters up to date.
-        // Runs at 10 Hz so stale underlines from terminal redraws (e.g., Claude Code streaming)
-        // are corrected within ~100ms. Scanning ~30 lines of regex is negligible overhead.
+        // Periodic gutter refresh at 10 Hz so exit code indicators stay current
+        // as terminal output scrolls.
         linkScanTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                self?.scanVisibleLinks()
                 self?.refreshGutters()
             }
         }
-    }
-
-    // MARK: - Persistent Link Underlines
-
-    /// Scans all visible terminal panes for links and updates overlays with underlines.
-    /// Called periodically by the link scan timer so underlines stay current as output scrolls.
-    private func scanVisibleLinks() {
-        for session in sessionManager.visibleSessions {
-            scanLinks(for: session)
-        }
-    }
-
-    /// Scans a single session's visible rows for links and updates its overlay.
-    private func scanLinks(for session: TerminalSession) {
-        let terminalView = session.terminalView
-        let terminal = terminalView.getTerminal()
-        let bounds = terminalView.bounds
-        guard bounds.width > 0, bounds.height > 0 else { return }
-
-        let cell = cellDimensions(for: terminalView)
-        var rects: [NSRect] = []
-
-        for screenRow in 0..<terminal.rows {
-            let bufferRow = screenRow + terminal.buffer.yDisp
-            let lineStart = Position(col: 0, row: bufferRow)
-            let lineEnd = Position(col: terminal.cols - 1, row: bufferRow)
-            let lineText = terminal.getText(start: lineStart, end: lineEnd)
-                .replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression)
-
-            guard !lineText.isEmpty else { continue }
-
-            let links = TerminalLinkDetector.detectAll(in: lineText, cwd: session.currentDirectory)
-
-            for link in links {
-                guard let colRange = TerminalLinkDetector.columnRange(for: link, in: lineText) else {
-                    continue
-                }
-                let x = CGFloat(colRange.start) * cell.width
-                let y = bounds.height - CGFloat(screenRow + 1) * cell.height + 1
-                let width = CGFloat(colRange.length) * cell.width
-                rects.append(NSRect(x: x, y: y, width: width, height: 1.0))
-            }
-        }
-
-        let overlay = ensureLinkOverlay(for: session)
-        overlay.updateUnderlines(rects)
     }
 
     // MARK: - Cell Dimension Computation
@@ -1521,28 +1464,6 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         }
     }
 
-    /// Returns or creates the link overlay for a specific session.
-    /// Each visible session has its own overlay keyed by session ID.
-    private func ensureLinkOverlay(for session: TerminalSession) -> TerminalLinkOverlayView {
-        let terminalView = session.terminalView
-
-        if let existing = linkOverlays[session.id] {
-            // Move overlay to correct terminal view if needed
-            if existing.superview !== terminalView {
-                existing.removeFromSuperview()
-                existing.frame = terminalView.bounds
-                terminalView.addSubview(existing)
-            }
-            return existing
-        }
-
-        let overlay = TerminalLinkOverlayView(frame: terminalView.bounds)
-        overlay.autoresizingMask = [.width, .height]
-        terminalView.addSubview(overlay)
-        linkOverlays[session.id] = overlay
-        return overlay
-    }
-
     // MARK: - Gutter Refresh
 
     /// Updates all visible gutter views with current cell height and triggers redraw.
@@ -1690,8 +1611,6 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
                     tabBar.updateTabTitle(dirName, at: index)
                 }
             }
-            // CWD changed — relative paths may resolve differently now
-            self.scanVisibleLinks()
         }
     }
 
