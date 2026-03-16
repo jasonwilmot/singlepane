@@ -110,10 +110,6 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
     /// Per-session link overlays — one per visible terminal pane.
     private var linkOverlays: [UUID: TerminalLinkOverlayView] = [:]
 
-    /// Debounced work item for rescheduling a link rescan after content changes.
-    /// Cleared on each new content-change event to coalesce rapid updates.
-    nonisolated(unsafe) private var linkRescanWorkItem: DispatchWorkItem?
-
     /// Per-session exit code gutters — one per visible terminal pane.
     private var gutterViews: [UUID: TerminalGutterView] = [:]
 
@@ -161,7 +157,6 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         if let monitor = promptNavMonitor { NSEvent.removeMonitor(monitor) }
         if let monitor = hintsHotkeyMonitor { NSEvent.removeMonitor(monitor) }
         linkScanTimer?.invalidate()
-        linkRescanWorkItem?.cancel()
     }
 
     // MARK: - View Setup
@@ -420,7 +415,6 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
     private func createNewSession(directory: String? = nil, focusAfterCreation: Bool = false) {
         let session = sessionManager.createSession(directory: directory)
         session.terminalView.processDelegate = self
-        installContentChangeHandler(for: session)
 
         // Tab title = last path component of the working directory
         let cwd = directory ?? NSHomeDirectory()
@@ -871,8 +865,6 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         gridContainer?.removeFromSuperview()
         gridContainer = nil
         linkOverlays.removeAll()
-        linkRescanWorkItem?.cancel()
-        linkRescanWorkItem = nil
     }
 
     /// Distributes equal space to each pane in the split view.
@@ -1264,8 +1256,9 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         }
 
         // Periodic scan of visible rows to keep persistent underlines and gutters up to date.
-        // Runs at 2 Hz — scanning ~30 lines of regex is negligible overhead.
-        linkScanTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+        // Runs at 10 Hz so stale underlines from terminal redraws (e.g., Claude Code streaming)
+        // are corrected within ~100ms. Scanning ~30 lines of regex is negligible overhead.
+        linkScanTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.scanVisibleLinks()
                 self?.refreshGutters()
@@ -1317,35 +1310,6 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
 
         let overlay = ensureLinkOverlay(for: session)
         overlay.updateUnderlines(rects)
-    }
-
-    // MARK: - Content Change → Underline Invalidation
-
-    /// Hooks a session's terminal view to clear stale link underlines immediately
-    /// when content changes, then debounces a rescan so fresh underlines appear
-    /// after output settles. Prevents ghost underlines during rapid terminal redraws
-    /// (e.g., Claude Code streaming output with file references).
-    private func installContentChangeHandler(for session: TerminalSession) {
-        let sessionID = session.id
-        session.terminalView.onContentChanged = { [weak self] in
-            guard let self else { return }
-
-            // Immediately clear stale underlines — no artifacts visible.
-            if let overlay = self.linkOverlays[sessionID] {
-                overlay.clearUnderlines()
-            }
-
-            // Cancel any pending rescan and schedule a new one.
-            self.linkRescanWorkItem?.cancel()
-            let workItem = DispatchWorkItem { [weak self] in
-                guard let self else { return }
-                guard let session = self.sessionManager.sessions.first(where: { $0.id == sessionID }) else { return }
-                self.scanLinks(for: session)
-                self.refreshGutters()
-            }
-            self.linkRescanWorkItem = workItem
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
-        }
     }
 
     // MARK: - Cell Dimension Computation

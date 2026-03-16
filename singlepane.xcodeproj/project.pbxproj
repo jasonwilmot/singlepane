@@ -48,7 +48,6 @@
 		61E292D02F5FD07C00C753A5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 61E292CF2F5FD07C00C753A5 /* Assets.xcassets */; };
 		65BD48A518A24402E79DEF0C /* TerminalSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38991DAB13C9157F9B005614 /* TerminalSessionManager.swift */; };
 		68A83485582427BA9D68CC48 /* TerminalLinkOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95A26D802730F95DEFF30BC /* TerminalLinkOverlayView.swift */; };
-		70AB1C2D3E4F5A6B7C8D9E0F /* ObservableTerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70AB1C2D3E4F5A6B7C8D9E1F /* ObservableTerminalView.swift */; };
 		6A569C7DF24076783F6C043B /* FilePanelViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9A782044D34088675FE3DB8 /* FilePanelViewModel.swift */; };
 		6C8C87DABE20C0EE1609DE26 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE6C6D16EF13FB05ECA211F /* AppDelegate.swift */; };
 		6CBF8005181147DA069F13A1 /* VoiceMenuItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6BD6AB507063280DBCBB4A /* VoiceMenuItemView.swift */; };
@@ -253,7 +252,6 @@
 		F7A8B2C3D4E5061829304B5E /* TabBarResizeHandle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarResizeHandle.swift; sourceTree = "<group>"; };
 		F882609E9286B69AD822835C /* BreadcrumbSegmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreadcrumbSegmentView.swift; sourceTree = "<group>"; };
 		F95A26D802730F95DEFF30BC /* TerminalLinkOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalLinkOverlayView.swift; sourceTree = "<group>"; };
-		70AB1C2D3E4F5A6B7C8D9E1F /* ObservableTerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObservableTerminalView.swift; sourceTree = "<group>"; };
 		F97F67CD80C7A362FD512978 /* onboarding_placeholder.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = onboarding_placeholder.mp4; sourceTree = "<group>"; };
 		FAD102DF1F8776B82D52D18D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		FB1A2B3C4D5E6F7081920A3B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -357,7 +355,6 @@
 			isa = PBXGroup;
 			children = (
 				D4EDE0DAF1A31B42029B20AD /* CommandMark.swift */,
-				70AB1C2D3E4F5A6B7C8D9E1F /* ObservableTerminalView.swift */,
 				6D8FDFF0598D1BCF0BD9ABCC /* TerminalContainerViewController.swift */,
 				1961032083416ACCEA0A1774 /* TerminalDropView.swift */,
 				D48CB19A010E0B5137191AFB /* TerminalFindBarView.swift */,
@@ -743,7 +740,6 @@
 				75E0A6CC9DF5C2F3911C0BE1 /* TerminalHintsOverlayView.swift in Sources */,
 				DAEF1D9449D04A111E60221A /* TerminalLinkDetector.swift in Sources */,
 				68A83485582427BA9D68CC48 /* TerminalLinkOverlayView.swift in Sources */,
-				70AB1C2D3E4F5A6B7C8D9E0F /* ObservableTerminalView.swift in Sources */,
 				4CD72825AF205190FEB51DCE /* TerminalSession.swift in Sources */,
 				65BD48A518A24402E79DEF0C /* TerminalSessionManager.swift in Sources */,
 				1131399AA3BE25CB4021EB40 /* Theme.swift in Sources */,
