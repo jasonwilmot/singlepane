@@ -82,6 +82,7 @@
 		A1A2A3A4A5A60001B1B2B3B4 /* FileEncodingDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A2A3A4A5A60002B1B2B3B4 /* FileEncodingDetector.swift */; };
 		A1A2A3A4A5A60003B1B2B3B4 /* EditorStatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A2A3A4A5A60004B1B2B3B4 /* EditorStatusBarView.swift */; };
 		A1A2A3A4A5A60005B1B2B3B4 /* EditorStatusBarMenus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A2A3A4A5A60006B1B2B3B4 /* EditorStatusBarMenus.swift */; };
+		A1B2C3D4E5F60718291A2B3C /* SinglePaneTerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6071829A1B2C3D4E5F6 /* SinglePaneTerminalView.swift */; };
 		A1B2C3D4E5F60718293A4B5C /* PanelShiftArrowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C60718293A4B5D /* PanelShiftArrowView.swift */; };
 		A1B2C3D4E5F60718A9B0C1D2 /* HotkeyRecorderPopoverViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6071829A0B1C2D3 /* HotkeyRecorderPopoverViewController.swift */; };
 		A3A79D49D40A153C812CB1E2 /* rose-pine.json in Resources */ = {isa = PBXBuildFile; fileRef = 2C42CEB104C0ECD8F2E1AC86 /* rose-pine.json */; };
@@ -125,11 +126,11 @@
 		F5D2F2C98976C364CF920B2A /* CustomLayoutIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B146D3CEFDD2E50A9C611F /* CustomLayoutIconView.swift */; };
 		F7A8B2C3D4E5061829304B5D /* TabBarResizeHandle.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7A8B2C3D4E5061829304B5E /* TabBarResizeHandle.swift */; };
 		FACB682A0576D944D0EC8025 /* DirectoryEnumerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A43169F36ACCCC557B727C48 /* DirectoryEnumerator.swift */; };
+		FB1A2B3C4D5E6F7081920A30 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = FB1A2B3C4D5E6F7081920A3B /* PrivacyInfo.xcprivacy */; };
 		FBACB95FB32B85A3AB0BA9B4 /* FilterPillView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF0FBAF264E02331DB4F267D /* FilterPillView.swift */; };
 		FC4F7D16F8499E36C61ECCE2 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A67D8939D6D15E723FA6E32 /* main.swift */; };
 		FE2389DA36223E84B04CD973 /* MediaPlayerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E0D0BB80206F9F03C5FEB85 /* MediaPlayerViewController.swift */; };
 		TXFD59A1B2C3D4E5F6A7B8C9 /* TextFileDetection.swift in Sources */ = {isa = PBXBuildFile; fileRef = TXFD59A1B2C3D4E5F6A7B800 /* TextFileDetection.swift */; };
-		FB1A2B3C4D5E6F7081920A30 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = FB1A2B3C4D5E6F7081920A3B /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -233,6 +234,7 @@
 		D42E8AEEFBD597FF4562C368 /* ColumnIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColumnIdentifiers.swift; sourceTree = "<group>"; };
 		D48CB19A010E0B5137191AFB /* TerminalFindBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalFindBarView.swift; sourceTree = "<group>"; };
 		D4E5F6071829304AC2D3E4F5 /* LayoutHotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutHotkeyManager.swift; sourceTree = "<group>"; };
+		D4E5F6071829A1B2C3D4E5F6 /* SinglePaneTerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SinglePaneTerminalView.swift; sourceTree = "<group>"; };
 		D4EDE0DAF1A31B42029B20AD /* CommandMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandMark.swift; sourceTree = "<group>"; };
 		D5DC717302EE8D4857220CE9 /* SearchResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchResult.swift; sourceTree = "<group>"; };
 		D74A212997ACAE870991D4BD /* DividerSplitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DividerSplitView.swift; sourceTree = "<group>"; };
@@ -363,6 +365,7 @@
 				F44EADC7A148E0D7FAC000EE /* TerminalHintsOverlayView.swift */,
 				A2E238DDAB62006FD76A024B /* TerminalLinkDetector.swift */,
 				F95A26D802730F95DEFF30BC /* TerminalLinkOverlayView.swift */,
+				D4E5F6071829A1B2C3D4E5F6 /* SinglePaneTerminalView.swift */,
 				B5A4D3601A1543D63424309C /* TerminalSession.swift */,
 				38991DAB13C9157F9B005614 /* TerminalSessionManager.swift */,
 			);
@@ -740,6 +743,7 @@
 				75E0A6CC9DF5C2F3911C0BE1 /* TerminalHintsOverlayView.swift in Sources */,
 				DAEF1D9449D04A111E60221A /* TerminalLinkDetector.swift in Sources */,
 				68A83485582427BA9D68CC48 /* TerminalLinkOverlayView.swift in Sources */,
+				A1B2C3D4E5F60718291A2B3C /* SinglePaneTerminalView.swift in Sources */,
 				4CD72825AF205190FEB51DCE /* TerminalSession.swift in Sources */,
 				65BD48A518A24402E79DEF0C /* TerminalSessionManager.swift in Sources */,
 				1131399AA3BE25CB4021EB40 /* Theme.swift in Sources */,
@@ -776,7 +780,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jasonwilmot.singlepane;
 				PRODUCT_NAME = SinglePane;
 				SDKROOT = macosx;
@@ -803,7 +807,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jasonwilmot.singlepane;
 				PRODUCT_NAME = SinglePane;
 				SDKROOT = macosx;

@@ -78,9 +78,8 @@ final class CodePreviewViewController: NSViewController {
         container.addSubview(lineNumberGutter)
 
         scrollView = NSScrollView(frame: container.bounds)
-        scrollView.hasVerticalScroller = true
+        scrollView.hasVerticalScroller = false
         scrollView.hasHorizontalScroller = false
-        scrollView.autohidesScrollers = true
         scrollView.translatesAutoresizingMaskIntoConstraints = false
 
         let contentSize = scrollView.contentSize
@@ -228,7 +227,7 @@ final class CodePreviewViewController: NSViewController {
                 )
                 self.textView.textContainer?.widthTracksTextView = false
                 self.textView.isHorizontallyResizable = true
-                self.scrollView.hasHorizontalScroller = true
+                self.scrollView.hasHorizontalScroller = false
             }
 
             self.lineNumberGutter.overrideTotalLineCount = totalLines

@@ -184,9 +184,8 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
 
         // Scroll view wrapping the table (list view)
         scrollView.documentView = fileTableView
-        scrollView.hasVerticalScroller = true
-        scrollView.hasHorizontalScroller = true
-        scrollView.autohidesScrollers = true
+        scrollView.hasVerticalScroller = false
+        scrollView.hasHorizontalScroller = false
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(scrollView)
 
@@ -426,9 +425,8 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
         thumbnailGridView.registerForDraggedTypes([.fileURL])
 
         thumbnailScrollView.documentView = thumbnailGridView
-        thumbnailScrollView.hasVerticalScroller = true
+        thumbnailScrollView.hasVerticalScroller = false
         thumbnailScrollView.hasHorizontalScroller = false
-        thumbnailScrollView.autohidesScrollers = true
 
         // Wire keyboard and mouse handlers (mirrors list view)
         thumbnailGridView.onEnter = { [weak self] in self?.openSelectedItem() }
@@ -476,9 +474,8 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
         searchTableView.delegate = self
 
         searchScrollView.documentView = searchTableView
-        searchScrollView.hasVerticalScroller = true
+        searchScrollView.hasVerticalScroller = false
         searchScrollView.hasHorizontalScroller = false
-        searchScrollView.autohidesScrollers = true
     }
 
     // MARK: - Search Mode Activation

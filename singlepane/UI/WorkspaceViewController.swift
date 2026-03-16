@@ -114,6 +114,7 @@ final class WorkspaceViewController: NSViewController, LayoutBarDelegate {
     /// Switch to the terminal tab for the given session UUID.
     /// Called by the notification click-through handler in AppDelegate.
     func selectTerminalTab(sessionID: UUID) {
+        rootSplitVC.ensurePanelVisible(.terminal)
         rootSplitVC.terminalContainer?.selectTab(sessionID: sessionID)
     }
 

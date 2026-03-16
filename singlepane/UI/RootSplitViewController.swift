@@ -317,6 +317,15 @@ final class RootSplitViewController: NSSplitViewController, PanelShiftDelegate {
         }
     }
 
+    // MARK: - Panel Visibility
+
+    /// Ensures the given panel is visible (uncollapsed) in the split view.
+    func ensurePanelVisible(_ panelType: PanelType) {
+        guard let item = panelItems[panelType], item.isCollapsed else { return }
+        item.isCollapsed = false
+        splitView.adjustSubviews()
+    }
+
     // MARK: - Terminal Access
 
     /// Returns the TerminalContainerViewController from the split view children.

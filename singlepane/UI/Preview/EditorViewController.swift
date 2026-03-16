@@ -95,9 +95,8 @@ final class EditorViewController: NSViewController, NSTextViewDelegate {
 
         // Scroll view — NSTextView needs a properly sized container
         scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 400, height: 600))
-        scrollView.hasVerticalScroller = true
+        scrollView.hasVerticalScroller = false
         scrollView.hasHorizontalScroller = false
-        scrollView.autohidesScrollers = true
         scrollView.translatesAutoresizingMaskIntoConstraints = false
 
         // Create text view sized to the scroll view's content area
@@ -840,7 +839,6 @@ final class EditorViewController: NSViewController, NSTextViewDelegate {
             textView.maxSize = NSSize(
                 width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude
             )
-            scrollView.hasHorizontalScroller = false
         } else {
             textView.textContainer?.containerSize = NSSize(
                 width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude
@@ -852,7 +850,6 @@ final class EditorViewController: NSViewController, NSTextViewDelegate {
             textView.maxSize = NSSize(
                 width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude
             )
-            scrollView.hasHorizontalScroller = true
         }
 
         // Force complete relayout

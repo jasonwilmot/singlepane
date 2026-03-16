@@ -56,8 +56,7 @@ final class MarkdownOutlineView: NSView {
         tableView.action = #selector(rowClicked)
 
         scrollView.documentView = tableView
-        scrollView.hasVerticalScroller = true
-        scrollView.autohidesScrollers = true
+        scrollView.hasVerticalScroller = false
         scrollView.drawsBackground = false
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(scrollView)

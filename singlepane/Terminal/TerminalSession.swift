@@ -11,8 +11,12 @@ final class TerminalSession {
     // MARK: - Properties
 
     let id: UUID = UUID()
-    let terminalView: LocalProcessTerminalView
+    let terminalView: SinglePaneTerminalView
     var title: String
+
+    /// The shell name (e.g. "bash", "zsh") for this session.
+    /// Used to apply shell-specific workarounds.
+    private(set) var shellName: String = "zsh"
 
     /// Hook-driven highlight color for this session's tab.
     /// Stored on the session so it survives focus/repaint cycles.
@@ -47,7 +51,7 @@ final class TerminalSession {
 
     init(frame: NSRect) {
         self.title = "Terminal"
-        self.terminalView = LocalProcessTerminalView(frame: frame)
+        self.terminalView = SinglePaneTerminalView(frame: frame)
         self.terminalView.autoresizingMask = [.width, .height]
         configureAppearance()
     }
@@ -169,7 +173,14 @@ final class TerminalSession {
     /// can target this specific tab via the singlepane:// URL scheme.
     /// Sources the bundled OSC 133 shell integration script for command mark support.
     func startShell(currentDirectory: String? = nil) {
-        let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        // Read the user's login shell from the password database (same source
+        // Terminal.app and iTerm use). Falls back to $SHELL, then /bin/zsh.
+        let shell: String = {
+            if let pw = getpwuid(getuid()), pw.pointee.pw_shell != nil {
+                return String(cString: pw.pointee.pw_shell)
+            }
+            return ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        }()
         let cwd = currentDirectory ?? NSHomeDirectory()
 
         // Set the initial CWD immediately so link detection can resolve
@@ -183,11 +194,15 @@ final class TerminalSession {
         env.append("SP_TAB_ID=\(id.uuidString)")
         env.append("TC_TAB_ID=\(id.uuidString)")
         env.append("TERM_PROGRAM=Apple_Terminal")
+        env.append("TERM_PROGRAM_VERSION=455")
+        env.append("TERM_SESSION_ID=\(id.uuidString)")
         env.append("COLORTERM=truecolor")
+
 
         // Resolve the bundled shell integration script for OSC 133 command marks.
         // Set VELOCITY_SHELL_INTEGRATION so the script path is available to the shell.
         let shellName = (shell as NSString).lastPathComponent
+        self.shellName = shellName
         if let scriptPath = Self.shellIntegrationPath(for: shellName) {
             env.append("VELOCITY_SHELL_INTEGRATION=\(scriptPath)")
         }
@@ -340,6 +355,16 @@ final class TerminalSession {
                     exitCode = nil
                 }
                 self.addCommandMark(type: .commandFinished, absoluteLine: absoluteLine, exitCode: exitCode)
+                // Bash workaround: Claude Code (and similar TUI apps) don't use
+                // the alternate screen buffer under bash, leaving stale content
+                // in the normal buffer after exit. Clear from cursor to end of
+                // screen to remove it. This is a no-op for normal commands.
+                // Not needed for zsh where alternate screen works correctly.
+                if self.shellName == "bash" {
+                    Task { @MainActor [weak self] in
+                        self?.terminalView.feed(text: "\u{1b}[J")
+                    }
+                }
                 Task { @MainActor in self.onCommandFinished?() }
             default:
                 break

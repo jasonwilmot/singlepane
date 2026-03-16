@@ -98,7 +98,8 @@ final class LayoutBarView: NSView {
         feedbackButton.font = FontManager.shared.activeFont.withSize(11)
         feedbackButton.controlSize = .small
         feedbackButton.title = "Feedback"
-        feedbackButton.contentTintColor = .white
+        feedbackButton.contentTintColor = .black
+        feedbackButton.alignment = .center
         feedbackButton.target = self
         feedbackButton.action = #selector(feedbackButtonClicked(_:))
         applyFeedbackButtonTheme()
@@ -109,6 +110,7 @@ final class LayoutBarView: NSView {
         themeButton.bezelStyle = .inline
         themeButton.font = FontManager.shared.activeFont.withSize(11)
         themeButton.controlSize = .small
+        themeButton.alignment = .center
         themeButton.target = self
         themeButton.action = #selector(themeButtonClicked(_:))
         themeButton.title = ThemeManager.shared.activeTheme.name
@@ -120,6 +122,7 @@ final class LayoutBarView: NSView {
         fontButton.bezelStyle = .inline
         fontButton.font = FontManager.shared.activeFont.withSize(11)
         fontButton.controlSize = .small
+        fontButton.alignment = .center
         fontButton.target = self
         fontButton.action = #selector(fontButtonClicked(_:))
         fontButton.title = FontManager.shared.activeFontName
@@ -131,6 +134,7 @@ final class LayoutBarView: NSView {
         voiceButton.bezelStyle = .inline
         voiceButton.font = FontManager.shared.activeFont.withSize(11)
         voiceButton.controlSize = .small
+        voiceButton.alignment = .center
         voiceButton.target = self
         voiceButton.action = #selector(voiceButtonClicked(_:))
         updateVoiceButtonTitle()
@@ -172,18 +176,22 @@ final class LayoutBarView: NSView {
             feedbackButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
             feedbackButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             feedbackButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 120),
+            feedbackButton.heightAnchor.constraint(equalToConstant: 22),
 
             themeButton.trailingAnchor.constraint(equalTo: feedbackButton.leadingAnchor, constant: -8),
             themeButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             themeButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 120),
+            themeButton.heightAnchor.constraint(equalToConstant: 22),
 
             fontButton.trailingAnchor.constraint(equalTo: themeButton.leadingAnchor, constant: -8),
             fontButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             fontButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 110),
+            fontButton.heightAnchor.constraint(equalToConstant: 22),
 
             voiceButton.trailingAnchor.constraint(equalTo: fontButton.leadingAnchor, constant: -8),
             voiceButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             voiceButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 100),
+            voiceButton.heightAnchor.constraint(equalToConstant: 22),
 
             muteButton.trailingAnchor.constraint(equalTo: voiceButton.leadingAnchor, constant: -4),
             muteButton.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -208,7 +216,7 @@ final class LayoutBarView: NSView {
 
     /// Opens a blank GitHub issue in the browser.
     @objc private func feedbackButtonClicked(_ sender: NSButton) {
-        if let url = URL(string: "https://github.com/jasonwilmot/cli/issues/new") {
+        if let url = URL(string: "https://github.com/jasonwilmot/singlepane/issues/new") {
             NSWorkspace.shared.open(url)
         }
     }

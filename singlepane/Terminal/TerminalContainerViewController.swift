@@ -475,6 +475,7 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
             return
         }
         tabBar.selectTabVisually(at: index)
+        tabBarDidSelectTab(at: index)
     }
 
     /// Returns the title of the tab for the given session UUID, or nil if not found.
