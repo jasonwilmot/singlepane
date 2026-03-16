@@ -616,7 +616,7 @@ final class MarkdownPreviewViewController: NSViewController {
                 line-height: 1.6;
                 color: #\(fg);
                 background: #\(bg);
-                padding: 16px 24px;
+                padding: 8px 24px;
                 max-width: 800px;
                 margin: 0 auto;
             }
