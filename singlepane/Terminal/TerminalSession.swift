@@ -11,7 +11,7 @@ final class TerminalSession {
     // MARK: - Properties
 
     let id: UUID = UUID()
-    let terminalView: LocalProcessTerminalView
+    let terminalView: ObservableTerminalView
     var title: String
 
     /// Hook-driven highlight color for this session's tab.
@@ -47,7 +47,7 @@ final class TerminalSession {
 
     init(frame: NSRect) {
         self.title = "Terminal"
-        self.terminalView = LocalProcessTerminalView(frame: frame)
+        self.terminalView = ObservableTerminalView(frame: frame)
         self.terminalView.autoresizingMask = [.width, .height]
         configureAppearance()
     }

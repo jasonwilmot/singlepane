@@ -6,6 +6,7 @@
 // This VC exposes scroll-to-heading and scroll spy for the outline column.
 
 import AppKit
+import PDFKit
 import UniformTypeIdentifiers
 import WebKit
 import Markdown
@@ -16,6 +17,7 @@ final class MarkdownPreviewViewController: NSViewController {
     // MARK: - Properties
 
     private let webView = WKWebView()
+    private let pdfView = PDFView()
 
     /// The file currently being previewed.
     private(set) var currentFileURL: URL?
@@ -33,6 +35,16 @@ final class MarkdownPreviewViewController: NSViewController {
     /// Passes the heading anchor ID (e.g., "heading-42").
     var onVisibleHeadingChanged: ((String) -> Void)?
 
+    /// Callback when the zoom level changes (magnification gesture or programmatic).
+    /// Passes the current zoom percentage (e.g., 150 for 150%).
+    var onZoomChanged: ((Int) -> Void)?
+
+    /// Whether the currently loaded content supports zoom (images and PDFs).
+    private(set) var isZoomableContent = false
+
+    /// Whether the currently loaded content is a PDF (routes zoom through PDFView).
+    private var isPDFContent = false
+
     // MARK: - View Setup
 
     override func loadView() {
@@ -43,6 +55,15 @@ final class MarkdownPreviewViewController: NSViewController {
         webView.setValue(false, forKey: "drawsBackground") // Transparent background
         webView.navigationDelegate = self
         container.addSubview(webView)
+
+        // PDFView for PDF files — no native toolbar, uses our zoom controls
+        pdfView.translatesAutoresizingMaskIntoConstraints = false
+        pdfView.autoScales = true
+        pdfView.displayMode = .singlePageContinuous
+        pdfView.displaysPageBreaks = true
+        pdfView.backgroundColor = .clear
+        pdfView.isHidden = true
+        container.addSubview(pdfView)
 
         // Set up message handlers for JavaScript → Swift callbacks
         webView.configuration.userContentController.add(
@@ -59,6 +80,11 @@ final class MarkdownPreviewViewController: NSViewController {
             webView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             webView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+
+            pdfView.topAnchor.constraint(equalTo: container.topAnchor),
+            pdfView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            pdfView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            pdfView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
 
         self.view = container
@@ -78,6 +104,7 @@ final class MarkdownPreviewViewController: NSViewController {
     func loadMarkdownFile(at url: URL) {
         _ = self.view // Ensure webView is in the hierarchy
         currentFileURL = url
+        disableZoom()
 
         let fileSize = url.fileSize
 
@@ -150,6 +177,7 @@ final class MarkdownPreviewViewController: NSViewController {
     func showPlaceholder(message: String = "Select a file to preview") {
         _ = self.view
         currentFileURL = nil
+        disableZoom()
         let html = Self.wrapInHTMLPage(
             body: "<p style='color:#888; text-align:center; margin-top:40px;'>\(message)</p>"
         )
@@ -160,6 +188,7 @@ final class MarkdownPreviewViewController: NSViewController {
     func loadImageFile(at url: URL) {
         _ = self.view
         currentFileURL = url
+        enableZoom()
 
         guard let imageData = try? Data(contentsOf: url) else {
             showPlaceholder(message: "Unable to read image")
@@ -190,11 +219,21 @@ final class MarkdownPreviewViewController: NSViewController {
         webView.loadHTMLString(html, baseURL: nil)
     }
 
-    /// Load and display a PDF file using the native WKWebView PDF renderer.
+    /// Load and display a PDF file using PDFKit.
+    /// Uses PDFView instead of WKWebView to avoid the native PDF toolbar overlay
+    /// that WKWebView shows (zoom buttons, page navigation, download) which cannot
+    /// be reliably hidden.
     func loadPDFFile(at url: URL) {
         _ = self.view
         currentFileURL = url
-        webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+        isPDFContent = true
+        isZoomableContent = true
+
+        guard let document = PDFDocument(url: url) else { return }
+        pdfView.document = document
+        pdfView.isHidden = false
+        webView.isHidden = true
+        onZoomChanged?(currentZoomPercentage)
     }
 
     /// Load and display an HTML file using native WKWebView rendering.
@@ -202,6 +241,7 @@ final class MarkdownPreviewViewController: NSViewController {
     func loadHTMLFile(at url: URL) {
         _ = self.view
         currentFileURL = url
+        disableZoom()
 
         let fileSize = url.fileSize
         if fileSize >= FileSizeThreshold.markdownTruncation {
@@ -223,6 +263,7 @@ final class MarkdownPreviewViewController: NSViewController {
     func loadTextFile(at url: URL) {
         _ = self.view
         currentFileURL = url
+        disableZoom()
         guard let contents = try? String(contentsOf: url, encoding: .utf8) else {
             showPlaceholder(message: "Unable to read file")
             return
@@ -355,6 +396,93 @@ final class MarkdownPreviewViewController: NSViewController {
             .replacingOccurrences(of: "\"", with: "\\\"")
             .replacingOccurrences(of: "\n", with: "\\n")
             .replacingOccurrences(of: "\r", with: "\\r")
+    }
+
+    // MARK: - Zoom
+
+    /// Minimum allowed magnification (25%).
+    private static let minZoom: CGFloat = 0.25
+
+    /// Maximum allowed magnification (500%).
+    private static let maxZoom: CGFloat = 5.0
+
+    /// Magnification step per zoom in/out action (~25%).
+    private static let zoomStep: CGFloat = 0.25
+
+    /// Enables pinch-to-zoom and resets magnification to 1.0.
+    /// Called when loading image content. Switches to webView (hides pdfView).
+    private func enableZoom() {
+        isZoomableContent = true
+        isPDFContent = false
+        pdfView.isHidden = true
+        webView.isHidden = false
+        webView.allowsMagnification = true
+        webView.magnification = 1.0
+        onZoomChanged?(100)
+    }
+
+    /// Disables magnification for non-zoomable content (markdown, HTML, text).
+    /// Switches to webView (hides pdfView).
+    private func disableZoom() {
+        isZoomableContent = false
+        isPDFContent = false
+        pdfView.isHidden = true
+        webView.isHidden = false
+        webView.allowsMagnification = false
+        webView.magnification = 1.0
+    }
+
+    /// Increases magnification by one step, clamped to maxZoom.
+    func zoomIn() {
+        guard isZoomableContent else { return }
+        if isPDFContent {
+            pdfView.scaleFactor = min(pdfView.scaleFactor + Self.zoomStep, Self.maxZoom)
+        } else {
+            webView.magnification = min(webView.magnification + Self.zoomStep, Self.maxZoom)
+        }
+        onZoomChanged?(currentZoomPercentage)
+    }
+
+    /// Decreases magnification by one step, clamped to minZoom.
+    func zoomOut() {
+        guard isZoomableContent else { return }
+        if isPDFContent {
+            pdfView.scaleFactor = max(pdfView.scaleFactor - Self.zoomStep, Self.minZoom)
+        } else {
+            webView.magnification = max(webView.magnification - Self.zoomStep, Self.minZoom)
+        }
+        onZoomChanged?(currentZoomPercentage)
+    }
+
+    /// Resets magnification to 1.0 (fit-to-window).
+    func resetZoom() {
+        guard isZoomableContent else { return }
+        if isPDFContent {
+            pdfView.scaleFactor = 1.0
+        } else {
+            webView.magnification = 1.0
+        }
+        onZoomChanged?(currentZoomPercentage)
+    }
+
+    /// Sets magnification so 1 image pixel = 1 screen point.
+    /// For PDFs this resets to 1.0 since there's no intrinsic pixel size.
+    func zoomToActualSize() {
+        guard isZoomableContent else { return }
+        if isPDFContent {
+            pdfView.scaleFactor = 1.0
+        } else {
+            webView.magnification = 1.0
+        }
+        onZoomChanged?(currentZoomPercentage)
+    }
+
+    /// Current zoom level as a percentage (e.g., 150 for 1.5x magnification).
+    var currentZoomPercentage: Int {
+        if isPDFContent {
+            return Int(round(pdfView.scaleFactor * 100))
+        }
+        return Int(round(webView.magnification * 100))
     }
 
     // MARK: - Theme Observation
@@ -720,6 +848,7 @@ extension MarkdownPreviewViewController: WKNavigationDelegate {
 
         decisionHandler(.cancel)
     }
+
 }
 
 // MARK: - HTML Converter

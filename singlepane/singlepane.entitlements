@@ -1,5 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict/>
+<dict>
+	<!-- App Sandbox: disabled for direct distribution.
+	     The embedded terminal requires unsandboxed PTY access (forkpty,
+	     tcsetpgrp). For App Store distribution, move the terminal to an
+	     XPC helper running outside the sandbox. -->
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+
+	<!-- Read-write access to user-selected files and folders (Open/Save panels, drag-drop) -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+
+	<!-- Persist access to user-selected files across app launches via security-scoped bookmarks -->
+	<key>com.apple.security.files.bookmarks.app-scope</key>
+	<true/>
+
+	<!-- Read-write access to the Downloads folder (declared in Info.plist) -->
+	<key>com.apple.security.files.downloads.read-write</key>
+	<true/>
+
+	<!-- Outbound network connections (for future cloud mount / update check features) -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+
+	<!-- Temporary exception: read-write access to the entire filesystem.
+	     A file manager is unusable without broad file access. This is the
+	     standard approach for file-manager apps distributed outside the
+	     App Store. For App Store submission, replace this with Full Disk
+	     Access guidance in onboarding and rely on user-selected entitlements. -->
+	<key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
+	<array>
+		<string>/</string>
+	</array>
+</dict>
 </plist>

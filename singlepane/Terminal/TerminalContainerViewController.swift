@@ -110,6 +110,10 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
     /// Per-session link overlays — one per visible terminal pane.
     private var linkOverlays: [UUID: TerminalLinkOverlayView] = [:]
 
+    /// Debounced work item for rescheduling a link rescan after content changes.
+    /// Cleared on each new content-change event to coalesce rapid updates.
+    nonisolated(unsafe) private var linkRescanWorkItem: DispatchWorkItem?
+
     /// Per-session exit code gutters — one per visible terminal pane.
     private var gutterViews: [UUID: TerminalGutterView] = [:]
 
@@ -157,6 +161,7 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         if let monitor = promptNavMonitor { NSEvent.removeMonitor(monitor) }
         if let monitor = hintsHotkeyMonitor { NSEvent.removeMonitor(monitor) }
         linkScanTimer?.invalidate()
+        linkRescanWorkItem?.cancel()
     }
 
     // MARK: - View Setup
@@ -358,6 +363,17 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         }
     }
 
+    override func viewDidLayout() {
+        super.viewDidLayout()
+        // When the terminal panel is resized (e.g., adjacent panes shown/hidden),
+        // the layer-backed contentArea may retain stale backing store pixels.
+        // Force all visible terminal views to redraw so no line artifacts remain.
+        contentArea.needsDisplay = true
+        for session in sessionManager.sessions {
+            session.terminalView.needsDisplay = true
+        }
+    }
+
     // MARK: - Theme Observation
 
     /// Watches ThemeManager for changes and re-applies colors to all terminal sessions
@@ -404,6 +420,7 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
     private func createNewSession(directory: String? = nil, focusAfterCreation: Bool = false) {
         let session = sessionManager.createSession(directory: directory)
         session.terminalView.processDelegate = self
+        installContentChangeHandler(for: session)
 
         // Tab title = last path component of the working directory
         let cwd = directory ?? NSHomeDirectory()
@@ -590,6 +607,17 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         } else {
             session.customTabTitle = newTitle
             tabBar.updateTabTitle(newTitle, at: index)
+        }
+    }
+
+    func tabBarDidReorderTab(from oldIndex: Int, to newIndex: Int) {
+        sessionManager.moveSession(from: oldIndex, to: newIndex)
+
+        // If grouped/split, rebuild the split layout to reflect the new order
+        if sessionManager.visibleIndices.count > 1 {
+            buildSplitView(indices: sessionManager.visibleIndices)
+            applyFocusAppearance()
+            scanVisibleLinks()
         }
     }
 
@@ -843,6 +871,8 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
         gridContainer?.removeFromSuperview()
         gridContainer = nil
         linkOverlays.removeAll()
+        linkRescanWorkItem?.cancel()
+        linkRescanWorkItem = nil
     }
 
     /// Distributes equal space to each pane in the split view.
@@ -1287,6 +1317,35 @@ final class TerminalContainerViewController: NSViewController, TabBarDelegate,
 
         let overlay = ensureLinkOverlay(for: session)
         overlay.updateUnderlines(rects)
+    }
+
+    // MARK: - Content Change → Underline Invalidation
+
+    /// Hooks a session's terminal view to clear stale link underlines immediately
+    /// when content changes, then debounces a rescan so fresh underlines appear
+    /// after output settles. Prevents ghost underlines during rapid terminal redraws
+    /// (e.g., Claude Code streaming output with file references).
+    private func installContentChangeHandler(for session: TerminalSession) {
+        let sessionID = session.id
+        session.terminalView.onContentChanged = { [weak self] in
+            guard let self else { return }
+
+            // Immediately clear stale underlines — no artifacts visible.
+            if let overlay = self.linkOverlays[sessionID] {
+                overlay.clearUnderlines()
+            }
+
+            // Cancel any pending rescan and schedule a new one.
+            self.linkRescanWorkItem?.cancel()
+            let workItem = DispatchWorkItem { [weak self] in
+                guard let self else { return }
+                guard let session = self.sessionManager.sessions.first(where: { $0.id == sessionID }) else { return }
+                self.scanLinks(for: session)
+                self.refreshGutters()
+            }
+            self.linkRescanWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
+        }
     }
 
     // MARK: - Cell Dimension Computation

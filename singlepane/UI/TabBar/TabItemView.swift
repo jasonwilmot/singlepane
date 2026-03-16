@@ -37,6 +37,12 @@ final class TabItemView: NSView {
     /// Called when the user commits an inline rename. Receives (tabIndex, newTitle).
     var onRename: ((Int, String) -> Void)?
 
+    /// Drag reorder callbacks — wired by TabBarView.
+    /// Called with (tabIndex, windowPoint) when the user drags a tab to reorder.
+    var onDragBegan: ((Int, NSPoint) -> Void)?
+    var onDragMoved: ((Int, NSPoint) -> Void)?
+    var onDragEnded: ((Int, NSPoint) -> Void)?
+
     private let style: Style
     private var orientationMode: OrientationMode = .horizontal
     private let statusLabel = NSTextField(labelWithString: "\u{2731}") // asterisk ✱
@@ -60,6 +66,17 @@ final class TabItemView: NSView {
     /// Optional hook-driven highlight color (background wash).
     /// Set via singlepane:// URL scheme. Persists until changed by next hook event.
     private(set) var highlightColor: NSColor?
+
+    // MARK: - Drag Reorder State
+
+    /// Window-coordinate position of the initial mouseDown.
+    /// Used to measure drag distance for the 5px activation threshold.
+    private var dragStartLocation: NSPoint = .zero
+
+    /// Whether the drag threshold has been exceeded for this mouse-down sequence.
+    /// When true, subsequent mouseDragged/mouseUp events drive the reorder flow
+    /// instead of being treated as a click.
+    private var isDragging = false
 
     // MARK: - Init
 
@@ -425,6 +442,7 @@ final class TabItemView: NSView {
     /// Using mouseDown instead of mouseUp avoids delivery issues after scroll view
     /// interactions, where NSScrollView can swallow mouseUp from subviews.
     /// Double-click fires onDoubleClick instead of onSelect.
+    /// Also records the start position for drag-to-reorder threshold detection.
     override func mouseDown(with event: NSEvent) {
         // During inline editing, don't trigger tab selection — that would call
         // tabBarDidSelectTab → showSingleTerminal → makeFirstResponder(terminalView),
@@ -437,8 +455,41 @@ final class TabItemView: NSView {
         if event.clickCount == 2 {
             onDoubleClick?(index)
         } else {
+            // Record start position for drag threshold detection
+            dragStartLocation = event.locationInWindow
+            isDragging = false
+
             let isCommand = event.modifierFlags.contains(.command)
             onSelect?(index, isCommand)
+        }
+    }
+
+    /// Tracks mouse movement after mouseDown to detect drag-to-reorder gestures.
+    /// A 5px threshold prevents accidental reorders from sloppy clicks.
+    override func mouseDragged(with event: NSEvent) {
+        guard !isEditing, onDragBegan != nil else { return }
+
+        let currentLocation = event.locationInWindow
+
+        if !isDragging {
+            // Check if the mouse has moved far enough to start a drag
+            let dx = currentLocation.x - dragStartLocation.x
+            let dy = currentLocation.y - dragStartLocation.y
+            let distance = sqrt(dx * dx + dy * dy)
+            guard distance >= 5 else { return }
+
+            isDragging = true
+            onDragBegan?(index, currentLocation)
+        }
+
+        onDragMoved?(index, currentLocation)
+    }
+
+    /// Completes a drag-to-reorder gesture when the mouse button is released.
+    override func mouseUp(with event: NSEvent) {
+        if isDragging {
+            onDragEnded?(index, event.locationInWindow)
+            isDragging = false
         }
     }
 

@@ -49,6 +49,9 @@ final class RootSplitViewController: NSSplitViewController, PanelShiftDelegate {
     /// Local event monitor for Cmd+N to create a new terminal tab.
     nonisolated(unsafe) private var newTabShortcutMonitor: Any?
 
+    /// Local event monitor for Cmd+=/-/0 to zoom image/PDF previews.
+    nonisolated(unsafe) private var zoomShortcutMonitor: Any?
+
     // MARK: - Minimum widths per panel
 
     private static let minWidths: [PanelType: CGFloat] = [
@@ -141,6 +144,7 @@ final class RootSplitViewController: NSSplitViewController, PanelShiftDelegate {
         installFocusCycleMonitor()
         installFindShortcutMonitor()
         installNewTabShortcutMonitor()
+        installZoomShortcutMonitor()
 
         // Default focus: first visible focusable panel (typically top file pane)
         if let firstPanel = focusablePanels().first {
@@ -165,6 +169,7 @@ final class RootSplitViewController: NSSplitViewController, PanelShiftDelegate {
         if let monitor = focusCycleMonitor { NSEvent.removeMonitor(monitor) }
         if let monitor = findShortcutMonitor { NSEvent.removeMonitor(monitor) }
         if let monitor = newTabShortcutMonitor { NSEvent.removeMonitor(monitor) }
+        if let monitor = zoomShortcutMonitor { NSEvent.removeMonitor(monitor) }
     }
 
     override func viewDidAppear() {
@@ -199,6 +204,7 @@ final class RootSplitViewController: NSSplitViewController, PanelShiftDelegate {
         splitView.needsDisplay = true
         for item in splitViewItems {
             item.viewController.view.needsDisplay = true
+            item.viewController.view.needsLayout = true
         }
 
         isApplyingLayout = false
@@ -229,6 +235,7 @@ final class RootSplitViewController: NSSplitViewController, PanelShiftDelegate {
         splitView.needsDisplay = true
         for item in splitViewItems {
             item.viewController.view.needsDisplay = true
+            item.viewController.view.needsLayout = true
         }
 
         isApplyingLayout = false
@@ -562,6 +569,29 @@ final class RootSplitViewController: NSSplitViewController, PanelShiftDelegate {
             if let terminal = self.focusedViewController as? TerminalContainerViewController {
                 terminal.tabBarDidRequestNewTab()
                 return nil
+            }
+
+            return event
+        }
+    }
+
+    // MARK: - Cmd+=/-/0 Preview Zoom
+
+    /// Installs a local event monitor for Cmd+=, Cmd+-, Cmd+0 to zoom
+    /// image/PDF previews when the preview pane is focused.
+    private func installZoomShortcutMonitor() {
+        zoomShortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
+            [weak self] event in
+            guard let self else { return event }
+
+            guard event.modifierFlags.contains(.command),
+                  !event.modifierFlags.contains(.shift),
+                  !event.modifierFlags.contains(.option) else { return event }
+
+            if let preview = self.focusedViewController as? PreviewContainerViewController {
+                if preview.handleZoomKeyEquivalent(event) {
+                    return nil
+                }
             }
 
             return event

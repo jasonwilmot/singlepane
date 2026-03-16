@@ -75,6 +75,11 @@ protocol TabBarDelegate: AnyObject {
 
     /// Called when the user commits an inline tab rename.
     func tabBarDidRenameTab(at index: Int, newTitle: String)
+
+    /// Called when the user drags a tab to a new position within the bar.
+    /// `oldIndex` is the tab's position before the drag started.
+    /// `newIndex` is its final position after the drop.
+    func tabBarDidReorderTab(from oldIndex: Int, to newIndex: Int)
 }
 
 // Default no-op implementations so only terminal containers need grouping.
@@ -86,6 +91,7 @@ extension TabBarDelegate {
     func tabBarDidToggleOrientation() {}
     func tabBarDidDoubleClickTab(at index: Int) {}
     func tabBarDidRenameTab(at index: Int, newTitle: String) {}
+    func tabBarDidReorderTab(from oldIndex: Int, to newIndex: Int) {}
 }
 
 // MARK: - Tab Bar View
@@ -172,6 +178,22 @@ final class TabBarView: NSView {
 
     private var tabItems: [TabItemView] = []
     private(set) var selectedIndex: Int = 0
+
+    // MARK: - Drag Reorder State
+
+    /// Original index of the tab when the drag started. Nil when no drag is active.
+    private var dragSourceIndex: Int?
+
+    /// Current position of the dragged tab in the array during the drag.
+    /// Updated each time the tab is moved past a neighboring tab's midpoint.
+    private var dragCurrentIndex: Int = 0
+
+    /// Ghost image view that follows the cursor during a drag reorder.
+    private var dragGhostView: NSImageView?
+
+    /// Frame of the dragged tab in this view's coordinate space at drag start.
+    /// Used to anchor the ghost on the non-drag axis.
+    private var dragOriginalFrame: NSRect = .zero
 
     /// Indices of all selected tabs when grouped.
     /// Contains a single index when not grouped.
@@ -504,6 +526,11 @@ final class TabBarView: NSView {
                 self?.delegate?.tabBarDidRenameTab(at: idx, newTitle: newTitle)
             }
         }
+
+        // Wire drag-to-reorder callbacks
+        tabItem.onDragBegan = { [weak self] idx, pt in self?.handleDragStart(tabIndex: idx, windowPoint: pt) }
+        tabItem.onDragMoved = { [weak self] _, pt in self?.handleDragMove(at: pt) }
+        tabItem.onDragEnded = { [weak self] _, _ in self?.handleDragEnd() }
 
         // Match current orientation mode for vertical row styling
         if orientation == .vertical {
@@ -864,5 +891,176 @@ final class TabBarView: NSView {
     /// Toggles tab bar orientation between horizontal and vertical.
     @objc private func orientationButtonClicked() {
         delegate?.tabBarDidToggleOrientation()
+    }
+
+    // MARK: - Drag Reorder
+
+    /// Initiates a drag-to-reorder gesture. Creates a ghost snapshot of the tab
+    /// and dims the original so the ghost appears to "lift" off the bar.
+    private func handleDragStart(tabIndex: Int, windowPoint: NSPoint) {
+        guard tabIndex < tabItems.count, tabItems.count > 1 else { return }
+        let tab = tabItems[tabIndex]
+
+        dragSourceIndex = tabIndex
+        dragCurrentIndex = tabIndex
+
+        // Create a ghost snapshot of the tab for visual feedback
+        let ghost = createDragGhost(for: tab)
+        let tabFrameInSelf = convert(tab.bounds, from: tab)
+        ghost.frame = tabFrameInSelf
+        addSubview(ghost)
+        dragGhostView = ghost
+        dragOriginalFrame = tabFrameInSelf
+
+        // Dim the source tab so the ghost appears to "lift" from the bar
+        tab.alphaValue = 0.3
+    }
+
+    /// Updates the ghost position and rearranges tabs as the cursor crosses midpoints.
+    private func handleDragMove(at windowPoint: NSPoint) {
+        guard dragSourceIndex != nil else { return }
+
+        updateGhostPosition(at: windowPoint)
+
+        let targetIndex = insertionIndex(at: windowPoint)
+        if targetIndex != dragCurrentIndex {
+            moveTabInStack(from: dragCurrentIndex, to: targetIndex)
+            dragCurrentIndex = targetIndex
+        }
+    }
+
+    /// Completes the drag — restores the tab's appearance, removes the ghost,
+    /// re-indexes all tabs, and fires the delegate callback.
+    private func handleDragEnd() {
+        guard let sourceIndex = dragSourceIndex else { return }
+        let finalIndex = dragCurrentIndex
+
+        // Restore the dragged tab's opacity
+        if finalIndex < tabItems.count {
+            tabItems[finalIndex].alphaValue = 1.0
+        }
+
+        // Remove the ghost overlay
+        dragGhostView?.removeFromSuperview()
+        dragGhostView = nil
+
+        // Re-index all tabs to match their new array positions
+        for (i, item) in tabItems.enumerated() {
+            item.index = i
+        }
+
+        // Update selection to follow the dragged tab
+        if selectedIndex == sourceIndex {
+            selectedIndex = finalIndex
+        } else if sourceIndex < selectedIndex && finalIndex >= selectedIndex {
+            // Dragged tab moved past the selected tab → selected shifts left
+            selectedIndex -= 1
+        } else if sourceIndex > selectedIndex && finalIndex <= selectedIndex {
+            // Dragged tab moved before the selected tab → selected shifts right
+            selectedIndex += 1
+        }
+
+        if isGrouped {
+            selectedIndices = Set(0..<tabItems.count)
+        } else {
+            selectedIndices = [selectedIndex]
+        }
+
+        updateSelectionAppearance()
+        setFocusedTab(at: selectedIndex)
+
+        // Notify the delegate if the tab actually moved
+        if finalIndex != sourceIndex {
+            delegate?.tabBarDidReorderTab(from: sourceIndex, to: finalIndex)
+        }
+
+        dragSourceIndex = nil
+    }
+
+    /// Creates a translucent ghost image view from a snapshot of the tab.
+    /// The ghost follows the cursor during the drag to show the tab's destination.
+    private func createDragGhost(for tabItem: TabItemView) -> NSImageView {
+        let size = tabItem.bounds.size
+        guard let bitmapRep = tabItem.bitmapImageRepForCachingDisplay(in: tabItem.bounds) else {
+            return NSImageView()
+        }
+        tabItem.cacheDisplay(in: tabItem.bounds, to: bitmapRep)
+
+        let image = NSImage(size: size)
+        image.addRepresentation(bitmapRep)
+
+        let imageView = NSImageView(image: image)
+        imageView.frame.size = size
+        imageView.alphaValue = 0.7
+        imageView.wantsLayer = true
+        imageView.layer?.cornerRadius = 4
+
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.3)
+        shadow.shadowOffset = NSSize(width: 0, height: -2)
+        shadow.shadowBlurRadius = 4
+        imageView.shadow = shadow
+
+        return imageView
+    }
+
+    /// Positions the ghost view along the drag axis, anchored on the non-drag axis.
+    private func updateGhostPosition(at windowPoint: NSPoint) {
+        guard let ghost = dragGhostView else { return }
+        let localPoint = convert(windowPoint, from: nil)
+
+        if orientation == .horizontal {
+            ghost.frame.origin.x = localPoint.x - ghost.frame.width / 2
+            ghost.frame.origin.y = dragOriginalFrame.origin.y
+        } else {
+            ghost.frame.origin.x = dragOriginalFrame.origin.x
+            ghost.frame.origin.y = localPoint.y - ghost.frame.height / 2
+        }
+    }
+
+    /// Determines the insertion index for the dragged tab based on cursor position
+    /// relative to each tab's midpoint along the primary axis.
+    private func insertionIndex(at windowPoint: NSPoint) -> Int {
+        guard tabItems.count > 1 else { return 0 }
+
+        if orientation == .horizontal {
+            // Tabs laid out left-to-right. Find first tab whose midpoint is past the cursor.
+            for (i, tab) in tabItems.enumerated() {
+                let tabFrameInWindow = tab.convert(tab.bounds, to: nil)
+                if windowPoint.x < tabFrameInWindow.midX {
+                    return i
+                }
+            }
+        } else {
+            // Tabs laid out top-to-bottom. In window coords, top = larger Y.
+            // First tab has the largest Y; find first tab whose midpoint is below the cursor.
+            for (i, tab) in tabItems.enumerated() {
+                let tabFrameInWindow = tab.convert(tab.bounds, to: nil)
+                if windowPoint.y > tabFrameInWindow.midY {
+                    return i
+                }
+            }
+        }
+        return tabItems.count - 1
+    }
+
+    /// Moves a tab within the stack view and tab items array.
+    /// Animates the layout change so neighboring tabs slide smoothly.
+    private func moveTabInStack(from sourceIdx: Int, to destIdx: Int) {
+        guard sourceIdx != destIdx,
+              sourceIdx < tabItems.count,
+              destIdx < tabItems.count else { return }
+
+        let tab = tabItems.remove(at: sourceIdx)
+        tabItems.insert(tab, at: destIdx)
+
+        stackView.removeArrangedSubview(tab)
+        stackView.insertArrangedSubview(tab, at: destIdx)
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.15
+            context.allowsImplicitAnimation = true
+            self.stackView.layoutSubtreeIfNeeded()
+        }
     }
 }

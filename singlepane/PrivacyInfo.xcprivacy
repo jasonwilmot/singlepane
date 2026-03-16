@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- No tracking: the app does not use data for cross-app/cross-site tracking -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+
+	<!-- No data collected or shared with third parties -->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+
+	<!-- Required-reason API declarations -->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<!-- File timestamp APIs (stat, lstat, fts_read, getattrlist)
+		     Used for: directory enumeration, file metadata display, search indexing -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- C617.1: Access file timestamps inside the app container or
+				     app-group container -->
+				<string>C617.1</string>
+				<!-- DDA9.1: Access file timestamps for files the user explicitly
+				     granted access to (user-selected files/folders) -->
+				<string>DDA9.1</string>
+			</array>
+		</dict>
+
+		<!-- System boot time / uptime APIs (timeIntervalSince1970, mach_absolute_time via frameworks)
+		     Used for: notification trigger timing, animation timing -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- 35F9.1: Access system boot time to calculate time intervals -->
+				<string>35F9.1</string>
+			</array>
+		</dict>
+
+		<!-- UserDefaults API
+		     Used for: storing user preferences (theme, font, layout, onboarding state) -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- CA92.1: Access UserDefaults to read/write settings within the app -->
+				<string>CA92.1</string>
+			</array>
+		</dict>
+
+		<!-- Disk space APIs (statfs, fstatvfs via Foundation/POSIX)
+		     Used for: displaying volume free space in file browser -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- E174.1: Display disk space information to the user -->
+				<string>E174.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

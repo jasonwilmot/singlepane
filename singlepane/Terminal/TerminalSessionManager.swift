@@ -94,6 +94,33 @@ final class TerminalSessionManager {
         }
     }
 
+    /// Moves a session from one index to another. State only — caller handles view rebuild.
+    /// Used by drag-to-reorder to rearrange the sessions array and remap indices.
+    func moveSession(from oldIndex: Int, to newIndex: Int) {
+        guard oldIndex != newIndex,
+              sessions.indices.contains(oldIndex),
+              newIndex >= 0, newIndex < sessions.count else { return }
+
+        let session = sessions.remove(at: oldIndex)
+        sessions.insert(session, at: newIndex)
+
+        // Remap focused index to follow the moved session
+        if focusedIndex == oldIndex {
+            focusedIndex = newIndex
+        } else if oldIndex < focusedIndex && newIndex >= focusedIndex {
+            focusedIndex -= 1
+        } else if oldIndex > focusedIndex && newIndex <= focusedIndex {
+            focusedIndex += 1
+        }
+
+        // Remap visible indices — rebuild from scratch since positions shifted
+        if visibleIndices.count > 1 {
+            visibleIndices = Set(0..<sessions.count)
+        } else {
+            visibleIndices = [focusedIndex]
+        }
+    }
+
     /// Close the session at the given index. State only — caller handles view teardown.
     func closeSession(at index: Int) {
         guard sessions.count > 1, index < sessions.count else { return }

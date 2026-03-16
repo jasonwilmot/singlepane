@@ -42,6 +42,9 @@ private final class FileTabBarDelegateAdapter: TabBarDelegate {
     func tabBarDidDoubleClickTab(at index: Int) {
         container?.fileTabDidDoubleClick(at: index)
     }
+    func tabBarDidReorderTab(from oldIndex: Int, to newIndex: Int) {
+        container?.fileTabDidReorder(from: oldIndex, to: newIndex)
+    }
     func tabBarDidRequestNewTab() {
         // No "+" button — file tabs are created by selecting files
     }
@@ -156,6 +159,9 @@ final class PreviewContainerViewController: NSViewController, FilePanelSelection
 
     /// Status bar at the bottom of the editor showing cursor position, encoding, etc.
     private let editorStatusBar = EditorStatusBarView()
+
+    /// Floating zoom controls overlay for image/PDF preview.
+    private let zoomControls = PreviewZoomControlsView()
 
     private let markdownPreview = MarkdownPreviewViewController()
     private let codePreview = CodePreviewViewController()
@@ -311,6 +317,12 @@ final class PreviewContainerViewController: NSViewController, FilePanelSelection
         editorStatusBar.isHidden = true
         contentArea.addSubview(editorStatusBar)
 
+        // Zoom controls — floating overlay in bottom-right of main content, above status bar
+        zoomControls.translatesAutoresizingMaskIntoConstraints = false
+        zoomControls.isHidden = true
+        zoomControls.delegate = self
+        mainContentView.addSubview(zoomControls)
+
         // Find bar sits below top of content area
         findBarTopToTabBar = contentFindBar.topAnchor.constraint(equalTo: contentArea.topAnchor)
         findBarHeightConstraint = contentFindBar.heightAnchor.constraint(
@@ -356,6 +368,10 @@ final class PreviewContainerViewController: NSViewController, FilePanelSelection
             editorStatusBar.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
             editorStatusBar.bottomAnchor.constraint(equalTo: contentArea.bottomAnchor),
             editorStatusBar.heightAnchor.constraint(equalToConstant: EditorStatusBarView.barHeight),
+
+            // Zoom controls — floating bottom-right of the main content area
+            zoomControls.trailingAnchor.constraint(equalTo: mainContentView.trailingAnchor, constant: -12),
+            zoomControls.bottomAnchor.constraint(equalTo: mainContentView.bottomAnchor, constant: -12),
         ])
 
         self.view = container
@@ -381,6 +397,11 @@ final class PreviewContainerViewController: NSViewController, FilePanelSelection
         // Wire scroll spy callback from preview mode
         markdownPreview.onVisibleHeadingChanged = { [weak self] headingID in
             self?.handlePreviewScrollSpy(headingID: headingID)
+        }
+
+        // Wire zoom level changes to the floating controls
+        markdownPreview.onZoomChanged = { [weak self] percentage in
+            self?.zoomControls.updateZoomLevel(percentage)
         }
 
         // Wire editor text change for live outline updates, dirty tracking, and search refresh
@@ -558,6 +579,43 @@ final class PreviewContainerViewController: NSViewController, FilePanelSelection
         }
     }
 
+    // MARK: - Zoom Controls
+
+    /// Handles Cmd+=, Cmd+-, Cmd+0 for zoom when showing zoomable content.
+    /// Returns true if the event was consumed.
+    func handleZoomKeyEquivalent(_ event: NSEvent) -> Bool {
+        guard event.modifierFlags.contains(.command),
+              !zoomControls.isHidden
+        else { return false }
+
+        switch event.charactersIgnoringModifiers {
+        case "+", "=":
+            markdownPreview.zoomIn()
+            return true
+        case "-":
+            markdownPreview.zoomOut()
+            return true
+        case "0":
+            markdownPreview.resetZoom()
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Shows zoom controls when preview mode is showing zoomable content (image/PDF).
+    /// Hides them for all other modes and content types.
+    private func updateZoomControlsVisibility() {
+        let shouldShow = currentMode == .preview
+            && !useCodePreview
+            && markdownPreview.isZoomableContent
+        zoomControls.isHidden = !shouldShow
+        if shouldShow {
+            zoomControls.updateZoomLevel(markdownPreview.currentZoomPercentage)
+            zoomControls.showAndRestartFadeTimer()
+        }
+    }
+
     // MARK: - Mode Switching
 
     private func showMode(_ mode: PreviewMode) {
@@ -578,6 +636,9 @@ final class PreviewContainerViewController: NSViewController, FilePanelSelection
         targetVC.view.autoresizingMask = [.width, .height]
         mainContentView.addSubview(targetVC.view)
 
+        // Keep zoom controls on top of child views
+        mainContentView.addSubview(zoomControls, positioned: .above, relativeTo: nil)
+
         // When switching to editor, auto-load the currently selected file if it's editable text
         if mode == .editor, let url = lastSelectedFileURL, isEditableTextFile(url) {
             isLoadingFile = true
@@ -586,6 +647,7 @@ final class PreviewContainerViewController: NSViewController, FilePanelSelection
         }
 
         updateButtonVisibility()
+        updateZoomControlsVisibility()
 
         // Enable replace toggle only in editor mode
         contentFindBar.setReplaceEnabled(mode == .editor)
@@ -627,6 +689,7 @@ final class PreviewContainerViewController: NSViewController, FilePanelSelection
         editor.view.autoresizingMask = [.width, .height]
         mainContentView.addSubview(editor.view)
         updateButtonVisibility()
+        updateZoomControlsVisibility()
         contentFindBar.setReplaceEnabled(true)
         editorStatusBar.isHidden = false
         syncStatusBarFromEditor()
@@ -649,6 +712,7 @@ final class PreviewContainerViewController: NSViewController, FilePanelSelection
         currentMode = .preview
 
         editorStatusBar.isHidden = true
+        updateZoomControlsVisibility()
 
     }
 
@@ -1178,6 +1242,25 @@ final class PreviewContainerViewController: NSViewController, FilePanelSelection
         }
 
         performTabClose(at: index)
+    }
+
+    /// Called when the user drags a file tab to a new position.
+    func fileTabDidReorder(from oldIndex: Int, to newIndex: Int) {
+        guard oldIndex != newIndex,
+              tabs.indices.contains(oldIndex),
+              newIndex >= 0, newIndex < tabs.count else { return }
+
+        let tab = tabs.remove(at: oldIndex)
+        tabs.insert(tab, at: newIndex)
+
+        // Update active tab index to follow the active tab
+        if activeTabIndex == oldIndex {
+            activeTabIndex = newIndex
+        } else if oldIndex < activeTabIndex && newIndex >= activeTabIndex {
+            activeTabIndex -= 1
+        } else if oldIndex > activeTabIndex && newIndex <= activeTabIndex {
+            activeTabIndex += 1
+        }
     }
 
     /// Shows a Save / Don't Save / Cancel alert before closing a dirty tab.
@@ -1996,6 +2079,27 @@ extension PreviewContainerViewController: EditorStatusBarDelegate {
             hasUnsavedChanges = true
             updateButtonVisibility()
         }
+    }
+}
+
+// MARK: - PreviewZoomControlsDelegate
+
+extension PreviewContainerViewController: PreviewZoomControlsDelegate {
+
+    func zoomControlsDidZoomIn() {
+        markdownPreview.zoomIn()
+    }
+
+    func zoomControlsDidZoomOut() {
+        markdownPreview.zoomOut()
+    }
+
+    func zoomControlsDidResetZoom() {
+        markdownPreview.resetZoom()
+    }
+
+    func zoomControlsDidZoomToActualSize() {
+        markdownPreview.zoomToActualSize()
     }
 }
 

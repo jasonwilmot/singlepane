@@ -291,4 +291,29 @@ final class TabbedFilePaneViewController: NSViewController, TabBarDelegate {
         let directory = activePanel?.viewModel.currentDirectory ?? initialDirectory
         createNewTab(directory: directory)
     }
+
+    func tabBarDidReorderTab(from oldIndex: Int, to newIndex: Int) {
+        guard oldIndex != newIndex,
+              panels.indices.contains(oldIndex),
+              newIndex >= 0, newIndex < panels.count else { return }
+
+        let panel = panels.remove(at: oldIndex)
+        panels.insert(panel, at: newIndex)
+
+        // Update active index to follow the active tab
+        if activeIndex == oldIndex {
+            activeIndex = newIndex
+        } else if oldIndex < activeIndex && newIndex >= activeIndex {
+            activeIndex -= 1
+        } else if oldIndex > activeIndex && newIndex <= activeIndex {
+            activeIndex += 1
+        }
+
+        // Re-observe directories for all affected indices since positions shifted
+        let minAffected = min(oldIndex, newIndex)
+        let maxAffected = max(oldIndex, newIndex)
+        for i in minAffected...maxAffected {
+            observeDirectory(for: i)
+        }
+    }
 }

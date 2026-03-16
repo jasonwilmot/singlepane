@@ -37,9 +37,15 @@ final class TerminalDropView: NSView {
         super.layout()
         for subview in subviews where subview.translatesAutoresizingMaskIntoConstraints {
             var frame = subview.frame
-            frame.size.height = floor(frame.size.height)
-            frame.size.width = floor(frame.size.width)
+            let snappedHeight = floor(frame.size.height)
+            let snappedWidth = floor(frame.size.width)
+            let changed = snappedHeight != frame.size.height || snappedWidth != frame.size.width
+            frame.size.height = snappedHeight
+            frame.size.width = snappedWidth
             subview.frame = frame
+            if changed {
+                subview.needsDisplay = true
+            }
         }
     }
 

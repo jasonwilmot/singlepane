@@ -302,8 +302,14 @@ final class CodeSyntaxHighlighter: NSObject, NSTextStorageDelegate, SyntaxHighli
         case "xml", "html":
             return [
                 (#"<!--[\s\S]*?-->"#, 0, true),
-                (#"</?[a-zA-Z][\w\-]*[^>]*/?>"#, 2, false),
+                // Strings (attribute values) — applied early, overridden by tag names below
                 (#""[^"]*?""#, 1, false),
+                (#"'[^']*?'"#, 1, false),
+                // Tag names only: <div, </span, <my-component (not the whole tag)
+                (#"</?[A-Za-z][\w\-\.]*"#, 2, false),
+                (#"/>"#, 2, false),
+                // Attribute names (word before =)
+                (#"(?<=\s)[a-zA-Z][\w\-:]*(?=\s*=)"#, 4, false),
             ]
         case "css":
             return [
@@ -401,24 +407,35 @@ final class CodeSyntaxHighlighter: NSObject, NSTextStorageDelegate, SyntaxHighli
 
         // Single-file component formats (.vue, .svelte, .astro).
         // Merges HTML, JS/TS, and CSS patterns into one composite set.
-        // Pattern order: comments first (all three languages), then strings,
-        // then HTML tags, CSS selectors, JS/CSS keywords, and numbers.
-        // Last-match-wins ensures later patterns (keywords, numbers) take
-        // priority inside tags and selectors where overlap occurs.
+        // Last-match-wins: later patterns override earlier ones where they
+        // overlap. Order: comments → strings → tag names → self-close →
+        // attribute names → vue directives → CSS selectors → JS keywords → numbers.
+        // This gives four distinct colors: tag names (magenta), attribute
+        // names (yellow), attribute values/strings (green), numbers (cyan).
         case "sfc":
             return [
                 // Comments — HTML, JS, CSS
-                (#"<!--[\s\S]*?-->"#, 0, true),             // HTML comments
-                (#"//.*$"#, 0, true),                        // JS single-line comments
-                (#"/\*[\s\S]*?\*/"#, 0, true),               // JS / CSS block comments
+                (#"<!--[\s\S]*?-->"#, 0, true),
+                (#"//.*$"#, 0, true),
+                (#"/\*[\s\S]*?\*/"#, 0, true),
 
-                // Strings — JS (double, single, template) and CSS
+                // Strings — JS (double, single, template) and HTML attribute values
                 (#""[^"]*?""#, 1, false),
                 (#"'[^']*?'"#, 1, false),
-                (#"`[^`]*?`"#, 1, false),                    // JS template literals
+                (#"`[^`]*?`"#, 1, false),
 
-                // HTML tags
-                (#"</?[a-zA-Z][\w\-]*[^>]*/?>"#, 2, false),
+                // HTML tag names only: <template, </div, <HeroSection
+                // Does NOT consume attributes — just the bracket + name.
+                (#"</?[A-Za-z][\w\-\.]*"#, 2, false),
+
+                // Self-closing />
+                (#"/>"#, 2, false),
+
+                // HTML/Vue attribute names (word before =): heading=, class=
+                (#"(?<=\s)[a-zA-Z@:v][\w\-:\.]*(?=\s*=)"#, 4, false),
+
+                // Vue directives without a value: v-else, v-cloak, v-pre
+                (#"(?<=\s)v-[\w\-]+"#, 4, false),
 
                 // CSS selectors
                 (#"[.#][\w\-]+"#, 4, false),
