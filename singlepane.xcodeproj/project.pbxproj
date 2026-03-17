@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		100000000000000000000001 /* BriefColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000002 /* BriefColumnView.swift */; };
 		0142BF7A3E8D4C91A5B06E2F /* BracketMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C3DA91B5F2E08A4D6B17C38 /* BracketMatcher.swift */; };
 		0307CDFD8CF87FC59009005B /* velocity-integration.zsh in Resources */ = {isa = PBXBuildFile; fileRef = A28D8C0D2713C7F0B4F53BD4 /* velocity-integration.zsh */; };
 		0598905F775D71F98BBEA56E /* IndexService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33B85BCCBFDBE56C4B6609B /* IndexService.swift */; };
@@ -156,6 +157,7 @@
 		2A67D8939D6D15E723FA6E32 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		2BB447B79A75ECC991784B94 /* FilePanelViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePanelViewController.swift; sourceTree = "<group>"; };
 		2C42CEB104C0ECD8F2E1AC86 /* rose-pine.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "rose-pine.json"; sourceTree = "<group>"; };
+		100000000000000000000002 /* BriefColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BriefColumnView.swift; sourceTree = "<group>"; };
 		304204443103306115083632 /* ThumbnailGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailGridView.swift; sourceTree = "<group>"; };
 		3453D6706E00405032D1480C /* everforest-dark.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "everforest-dark.json"; sourceTree = "<group>"; };
 		3875E210F9F5E1AB771EA035 /* tokyo-night.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "tokyo-night.json"; sourceTree = "<group>"; };
@@ -302,6 +304,7 @@
 				19B14D120DE1F1DAFACD2745 /* FileListTableView.swift */,
 				2BB447B79A75ECC991784B94 /* FilePanelViewController.swift */,
 				6AFDFB7FE895910B1CCC84C0 /* TabbedFilePaneViewController.swift */,
+				100000000000000000000002 /* BriefColumnView.swift */,
 				304204443103306115083632 /* ThumbnailGridView.swift */,
 			);
 			path = FileExplorer;
@@ -695,6 +698,7 @@
 				EDC8AA3480BF6B135991DF15 /* FileListTableView.swift in Sources */,
 				524564114550451034788148 /* ViewMode.swift in Sources */,
 				887433540024036283302072 /* ThumbnailService.swift in Sources */,
+				100000000000000000000001 /* BriefColumnView.swift in Sources */,
 				313206697334155198623553 /* ThumbnailGridView.swift in Sources */,
 				1D11AEE7BD9EDAAA06AC1060 /* FilePanelViewController.swift in Sources */,
 				6A569C7DF24076783F6C043B /* FilePanelViewModel.swift in Sources */,

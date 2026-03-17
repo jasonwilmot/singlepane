@@ -41,6 +41,8 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
     private let scrollView = NSScrollView()
     private let thumbnailGridView = ThumbnailGridView()
     private let thumbnailScrollView = NSScrollView()
+    private let briefColumnView = BriefColumnView()
+    private let briefScrollView = NSScrollView()
     private let breadcrumbBar = BreadcrumbBarView()
 
     /// Search results table — two-column layout (filename+path, excerpt).
@@ -195,6 +197,12 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
         thumbnailScrollView.isHidden = true
         container.addSubview(thumbnailScrollView)
 
+        // Brief column view (hidden by default)
+        setupBriefGrid()
+        briefScrollView.translatesAutoresizingMaskIntoConstraints = false
+        briefScrollView.isHidden = true
+        container.addSubview(briefScrollView)
+
         // Search results table (hidden by default)
         setupSearchTable()
         searchScrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -220,6 +228,11 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
             thumbnailScrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             thumbnailScrollView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             thumbnailScrollView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+
+            briefScrollView.topAnchor.constraint(equalTo: breadcrumbBar.bottomAnchor, constant: 4),
+            briefScrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            briefScrollView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            briefScrollView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
 
             searchScrollView.topAnchor.constraint(equalTo: breadcrumbBar.bottomAnchor, constant: 4),
             searchScrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
@@ -299,7 +312,7 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
 
     /// Watches viewModel.items — re-registers only itself on change.
     /// Suppresses reloads while an inline rename is active to avoid destroying the editing cell.
-    /// Reloads whichever view is currently active (table or thumbnail grid).
+    /// Reloads whichever view is currently active (table, thumbnail grid, or brief column).
     private func observeItems() {
         withObservationTracking {
             _ = viewModel.items
@@ -307,9 +320,13 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
             Task { @MainActor in
                 guard let self else { return }
                 if self.editingRow == nil {
-                    if self.viewModel.viewMode == .thumbnail {
+                    switch self.viewModel.viewMode {
+                    case .thumbnail:
                         self.thumbnailGridView.reloadData()
-                    } else {
+                    case .brief:
+                        self.briefColumnView.collectionViewLayout?.invalidateLayout()
+                        self.briefColumnView.reloadData()
+                    default:
                         self.fileTableView.reloadData()
                     }
                 }
@@ -382,6 +399,11 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
         thumbnailScrollView.drawsBackground = true
         thumbnailGridView.backgroundColors = [theme.explorerBackground]
 
+        // Brief column view
+        briefScrollView.backgroundColor = theme.explorerBackground
+        briefScrollView.drawsBackground = true
+        briefColumnView.backgroundColors = [theme.explorerBackground]
+
         // Search results table
         searchScrollView.backgroundColor = theme.explorerBackground
         searchScrollView.drawsBackground = true
@@ -392,6 +414,9 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
         reloadVisibleRows()
         if viewModel.viewMode == .thumbnail {
             thumbnailGridView.reloadData()
+        }
+        if viewModel.viewMode == .brief {
+            briefColumnView.reloadData()
         }
         if viewModel.isSearchMode {
             searchTableView.reloadData()
@@ -444,6 +469,48 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
             }
         }
         thumbnailGridView.onTypingActivation = { [weak self] chars in
+            self?.breadcrumbBar.enterFilterMode(initialText: chars)
+        }
+    }
+
+    // MARK: - Brief Grid Setup
+
+    /// Configures the brief column NSCollectionView with the newspaper layout.
+    private func setupBriefGrid() {
+        briefColumnView.collectionViewLayout = BriefColumnLayout()
+        briefColumnView.dataSource = self
+        briefColumnView.delegate = self
+        briefColumnView.isSelectable = true
+        briefColumnView.allowsMultipleSelection = true
+        briefColumnView.register(
+            BriefColumnItem.self,
+            forItemWithIdentifier: BriefColumnItem.identifier
+        )
+
+        // Enable drag source and drop destination
+        briefColumnView.setDraggingSourceOperationMask([.copy, .move], forLocal: true)
+        briefColumnView.setDraggingSourceOperationMask(.copy, forLocal: false)
+        briefColumnView.registerForDraggedTypes([.fileURL])
+
+        briefScrollView.documentView = briefColumnView
+        briefScrollView.hasVerticalScroller = false
+        briefScrollView.hasHorizontalScroller = true
+
+        // Wire keyboard and mouse handlers (mirrors list and thumbnail views)
+        briefColumnView.onEnter = { [weak self] in self?.openSelectedItem() }
+        briefColumnView.onBackspace = { [weak self] in self?.viewModel.navigateUp() }
+        briefColumnView.onPaste = { [weak self] in self?.pasteFiles() }
+        briefColumnView.onDoubleClick = { [weak self] in
+            guard let self else { return }
+            guard let indexPath = self.briefColumnView.selectionIndexPaths.first else { return }
+            let index = indexPath.item
+            guard index >= 0, index < self.viewModel.items.count else { return }
+            let item = self.viewModel.items[index]
+            if item.isDirectory {
+                self.viewModel.navigateTo(item.url)
+            }
+        }
+        briefColumnView.onTypingActivation = { [weak self] chars in
             self?.breadcrumbBar.enterFilterMode(initialText: chars)
         }
     }
@@ -763,9 +830,13 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
 
         breadcrumbBar.updateViewMode(mode, thumbnailSize: thumbnailSize)
 
+        // Hide all content scroll views, then show only the active one
+        scrollView.isHidden = true
+        thumbnailScrollView.isHidden = true
+        briefScrollView.isHidden = true
+
         switch mode {
         case .list:
-            thumbnailScrollView.isHidden = true
             scrollView.isHidden = false
             fileTableView.reloadData()
             // Restore selection in table
@@ -776,7 +847,6 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
             view.window?.makeFirstResponder(fileTableView)
 
         case .thumbnail:
-            scrollView.isHidden = true
             thumbnailScrollView.isHidden = false
             updateThumbnailLayout()
             thumbnailGridView.reloadData()
@@ -787,9 +857,19 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
             }
             view.window?.makeFirstResponder(thumbnailGridView)
 
-        default:
-            // Column, gallery, brief — not yet implemented. Fall back to list.
-            thumbnailScrollView.isHidden = true
+        case .brief:
+            briefScrollView.isHidden = false
+            briefColumnView.collectionViewLayout?.invalidateLayout()
+            briefColumnView.reloadData()
+            // Restore selection in brief view
+            if let selectedURL = viewModel.selectedFileURL,
+               let index = viewModel.items.firstIndex(where: { $0.url == selectedURL }) {
+                briefColumnView.selectionIndexes = IndexSet(integer: index)
+            }
+            view.window?.makeFirstResponder(briefColumnView)
+
+        case .column:
+            // Column mode not yet implemented — fall back to list.
             scrollView.isHidden = false
         }
     }
@@ -832,10 +912,14 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
 
     private func openSelectedItem() {
         let index: Int
-        if viewModel.viewMode == .thumbnail {
+        switch viewModel.viewMode {
+        case .thumbnail:
             guard let first = thumbnailGridView.selectionIndexes.first else { return }
             index = first
-        } else {
+        case .brief:
+            guard let first = briefColumnView.selectionIndexes.first else { return }
+            index = first
+        default:
             let row = fileTableView.selectedRow
             guard row >= 0 else { return }
             index = row
@@ -987,9 +1071,9 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
 
         // Apply theme text color and active font.
         // Folders use the accent color (matching layout icons) for visual distinction.
-        // Hidden files (dotfiles) are dimmed to 50% opacity.
+        // Hidden files (dotfiles) are dimmed to 75% opacity.
         let theme = ThemeManager.shared.activeTheme
-        let hiddenAlpha: CGFloat = item.isHidden ? 0.5 : 1.0
+        let hiddenAlpha: CGFloat = item.isHidden ? 0.75 : 1.0
         cellView.textField?.textColor = item.isDirectory
             ? theme.chromeAccent.withAlphaComponent(0.7 * hiddenAlpha)
             : theme.explorerText.withAlphaComponent(hiddenAlpha)
@@ -998,7 +1082,7 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
         switch identifier {
         case .fileName:
             cellView.textField?.stringValue = item.name
-            cellView.imageView?.alphaValue = item.isHidden ? 0.5 : 1.0
+            cellView.imageView?.alphaValue = item.isHidden ? 0.75 : 1.0
             if item.isDirectory {
                 cellView.imageView?.image = Self.folderImage
                 cellView.imageView?.contentTintColor = theme.chromeAccent.withAlphaComponent(0.7)
@@ -1183,6 +1267,11 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
         gridMenu.font = FontManager.shared.activeFont.withSize(12)
         gridMenu.delegate = self
         thumbnailGridView.menu = gridMenu
+
+        let briefMenu = NSMenu()
+        briefMenu.font = FontManager.shared.activeFont.withSize(12)
+        briefMenu.delegate = self
+        briefColumnView.menu = briefMenu
     }
 
     // MARK: - New File Menu
@@ -1269,13 +1358,6 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
         // Find the row matching the new file URL
         guard let rowIndex = viewModel.items.firstIndex(where: { $0.url == fileURL }) else { return }
 
-        // Reload table synchronously so the new row is available for cell access
-        fileTableView.reloadData()
-
-        // Select the row (triggers filePanelDidSelect → preview opens the file)
-        fileTableView.selectRowIndexes(IndexSet(integer: rowIndex), byExtendingSelection: false)
-        fileTableView.scrollRowToVisible(rowIndex)
-
         // Tell the preview panel to open this file in editor mode
         NotificationCenter.default.post(
             name: .fileDidCreate,
@@ -1283,9 +1365,24 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
             userInfo: ["fileURL": fileURL]
         )
 
-        // Begin inline rename after layout pass completes so the cell view exists
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
-            self?.beginInlineRename(at: rowIndex, fileURL: fileURL)
+        // Thumbnail and brief modes use alert-based rename; list uses inline rename
+        switch viewModel.viewMode {
+        case .thumbnail:
+            thumbnailGridView.reloadData()
+            thumbnailGridView.selectionIndexes = IndexSet(integer: rowIndex)
+            showRenameAlert(for: fileURL)
+        case .brief:
+            briefColumnView.reloadData()
+            briefColumnView.selectionIndexes = IndexSet(integer: rowIndex)
+            showRenameAlert(for: fileURL)
+        default:
+            fileTableView.reloadData()
+            fileTableView.selectRowIndexes(IndexSet(integer: rowIndex), byExtendingSelection: false)
+            fileTableView.scrollRowToVisible(rowIndex)
+            // Begin inline rename after layout pass completes so the cell view exists
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+                self?.beginInlineRename(at: rowIndex, fileURL: fileURL)
+            }
         }
     }
 
@@ -1295,8 +1392,16 @@ final class FilePanelViewController: NSViewController, NSTableViewDataSource, NS
     /// Used by terminal link clicks to highlight a file in the pane and trigger preview.
     func selectFile(at fileURL: URL) {
         guard let rowIndex = viewModel.items.firstIndex(where: { $0.url == fileURL }) else { return }
-        fileTableView.selectRowIndexes(IndexSet(integer: rowIndex), byExtendingSelection: false)
-        fileTableView.scrollRowToVisible(rowIndex)
+
+        switch viewModel.viewMode {
+        case .thumbnail:
+            thumbnailGridView.selectionIndexes = IndexSet(integer: rowIndex)
+        case .brief:
+            briefColumnView.selectionIndexes = IndexSet(integer: rowIndex)
+        default:
+            fileTableView.selectRowIndexes(IndexSet(integer: rowIndex), byExtendingSelection: false)
+            fileTableView.scrollRowToVisible(rowIndex)
+        }
 
         // Notify delegate so preview updates
         viewModel.selectedFileURL = fileURL
@@ -1416,7 +1521,12 @@ extension FilePanelViewController: BreadcrumbBarDelegate {
     func breadcrumbBar(_ bar: BreadcrumbBarView, didConfirmFilter filterText: String) {
         // Filter is locked in — pill badge is shown by BreadcrumbBarView.
         // Return focus to the active file view so the user can navigate filtered results.
-        let targetView: NSView = viewModel.viewMode == .thumbnail ? thumbnailGridView : fileTableView
+        let targetView: NSView
+        switch viewModel.viewMode {
+        case .thumbnail: targetView = thumbnailGridView
+        case .brief:     targetView = briefColumnView
+        default:         targetView = fileTableView
+        }
         view.window?.makeFirstResponder(targetView)
     }
 
@@ -1474,15 +1584,15 @@ extension FilePanelViewController: BreadcrumbBarDelegate {
 extension FilePanelViewController: NSMenuDelegate {
 
     /// Populates the context menu dynamically based on the item under the cursor.
-    /// Works for both list view (table) and thumbnail view (collection).
+    /// Works for list view (table), thumbnail view, and brief column view.
     /// Right-clicking an unselected item selects it first (standard macOS behavior).
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
         // Determine the clicked item index from whichever view is active
         let clickedRow: Int
-        if viewModel.viewMode == .thumbnail {
-            // Find collection view item under the mouse
+        switch viewModel.viewMode {
+        case .thumbnail:
             let locationInWindow = thumbnailGridView.window?.mouseLocationOutsideOfEventStream ?? .zero
             let locationInView = thumbnailGridView.convert(locationInWindow, from: nil)
             if let indexPath = thumbnailGridView.indexPathForItem(at: locationInView) {
@@ -1490,7 +1600,15 @@ extension FilePanelViewController: NSMenuDelegate {
             } else {
                 clickedRow = -1
             }
-        } else {
+        case .brief:
+            let locationInWindow = briefColumnView.window?.mouseLocationOutsideOfEventStream ?? .zero
+            let locationInView = briefColumnView.convert(locationInWindow, from: nil)
+            if let indexPath = briefColumnView.indexPathForItem(at: locationInView) {
+                clickedRow = indexPath.item
+            } else {
+                clickedRow = -1
+            }
+        default:
             clickedRow = fileTableView.clickedRow
         }
 
@@ -1518,11 +1636,16 @@ extension FilePanelViewController: NSMenuDelegate {
         }
 
         // Select the clicked item if it isn't already selected
-        if viewModel.viewMode == .thumbnail {
+        switch viewModel.viewMode {
+        case .thumbnail:
             if !thumbnailGridView.selectionIndexes.contains(clickedRow) {
                 thumbnailGridView.selectionIndexes = IndexSet(integer: clickedRow)
             }
-        } else {
+        case .brief:
+            if !briefColumnView.selectionIndexes.contains(clickedRow) {
+                briefColumnView.selectionIndexes = IndexSet(integer: clickedRow)
+            }
+        default:
             if !fileTableView.selectedRowIndexes.contains(clickedRow) {
                 fileTableView.selectRowIndexes(IndexSet(integer: clickedRow), byExtendingSelection: false)
             }
@@ -1689,7 +1812,8 @@ extension FilePanelViewController: NSMenuDelegate {
         let row = sender.tag
         guard row >= 0, row < viewModel.items.count else { return }
         let fileURL = viewModel.items[row].url
-        if viewModel.viewMode == .thumbnail {
+        // Thumbnail and brief modes use alert dialog; list mode uses inline rename
+        if viewModel.viewMode == .thumbnail || viewModel.viewMode == .brief {
             showRenameAlert(for: fileURL)
         } else {
             beginInlineRename(at: row, fileURL: fileURL)
@@ -1792,7 +1916,7 @@ extension FilePanelViewController: NSTextFieldDelegate {
     }
 }
 
-// MARK: - NSCollectionViewDataSource (Thumbnail Grid)
+// MARK: - NSCollectionViewDataSource (Thumbnail Grid + Brief Column)
 
 extension FilePanelViewController: NSCollectionViewDataSource {
 
@@ -1804,6 +1928,19 @@ extension FilePanelViewController: NSCollectionViewDataSource {
         _ collectionView: NSCollectionView,
         itemForRepresentedObjectAt indexPath: IndexPath
     ) -> NSCollectionViewItem {
+        // Route to the correct cell type based on which collection view is requesting
+        if collectionView === briefColumnView {
+            let cell = collectionView.makeItem(
+                withIdentifier: BriefColumnItem.identifier,
+                for: indexPath
+            )
+            guard let briefCell = cell as? BriefColumnItem,
+                  indexPath.item < viewModel.items.count else { return cell }
+            briefCell.configure(with: viewModel.items[indexPath.item])
+            return briefCell
+        }
+
+        // Thumbnail grid
         let cell = collectionView.makeItem(
             withIdentifier: ThumbnailGridItem.identifier,
             for: indexPath
@@ -1818,7 +1955,7 @@ extension FilePanelViewController: NSCollectionViewDataSource {
     }
 }
 
-// MARK: - NSCollectionViewDelegate (Thumbnail Grid)
+// MARK: - NSCollectionViewDelegate (Thumbnail Grid + Brief Column)
 
 extension FilePanelViewController: NSCollectionViewDelegate {
 

@@ -23,14 +23,14 @@ enum ViewMode: String, CaseIterable, Sendable {
     }
 
     /// Cycles to the next implemented view mode.
-    /// Currently only list and thumbnail are available.
+    /// Order: list → thumbnail → brief → list. Column is not yet implemented.
     var next: ViewMode {
         switch self {
         case .list:      return .thumbnail
-        case .thumbnail: return .list
-        // Future modes cycle back to list until implemented
-        case .column:    return .list
+        case .thumbnail: return .brief
         case .brief:     return .list
+        // Column mode cycles back to list until implemented
+        case .column:    return .list
         }
     }
 }

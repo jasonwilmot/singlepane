@@ -161,8 +161,8 @@ final class ThumbnailGridItem: NSCollectionViewItem {
     func configure(with item: FileItem, thumbnailSize: ThumbnailSize) {
         fileItem = item
 
-        // Hidden files at 50% opacity
-        let alpha: CGFloat = item.isHidden ? 0.5 : 1.0
+        // Hidden files at 75% opacity
+        let alpha: CGFloat = item.isHidden ? 0.75 : 1.0
         thumbnailImageView.alphaValue = alpha
         nameLabel.alphaValue = alpha
 
