@@ -97,7 +97,7 @@ final class BreadcrumbSegmentView: NSView {
             dropdownArrow.heightAnchor.constraint(equalToConstant: 14),
             dropdownArrow.trailingAnchor.constraint(equalTo: trailingAnchor),
 
-            heightAnchor.constraint(equalToConstant: 20),
+            heightAnchor.constraint(equalToConstant: 22),
         ])
 
         // Click gesture on label

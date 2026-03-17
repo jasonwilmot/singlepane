@@ -73,8 +73,9 @@ final class BreadcrumbBarView: NSView {
 
     // MARK: - Subviews
 
-    /// Scroll wrapper — clips and horizontally scrolls the segment container.
-    private let scrollView = NSScrollView()
+    /// Clip container — clips breadcrumb segments horizontally, plain NSView to avoid
+    /// NSScrollView internal layout issues (clipView height fights, vertical scroll leaks).
+    private let clipContainer = NSView()
 
     /// Document view inside the scroll view — holds breadcrumb segments.
     private let segmentContainer = NSView()
@@ -127,38 +128,25 @@ final class BreadcrumbBarView: NSView {
     private func setupViews() {
         wantsLayer = true
 
-        // Scroll view — horizontal-only, no visible scrollbar.
-        // Wraps the segment container so deep paths can be scrolled.
-        scrollView.hasHorizontalScroller = true
-        scrollView.hasVerticalScroller = false
-        scrollView.horizontalScrollElasticity = .allowed
-        scrollView.verticalScrollElasticity = .none
-        scrollView.drawsBackground = false
-        scrollView.automaticallyAdjustsContentInsets = false
-        scrollView.contentInsets = NSEdgeInsetsZero
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        // Clip container — plain NSView that clips overflowing breadcrumb segments.
+        // Using a plain view instead of NSScrollView avoids clipView height/layout issues.
+        clipContainer.wantsLayer = true
+        clipContainer.layer?.masksToBounds = true
+        clipContainer.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(clipContainer)
 
-        // Hide the horizontal scroller — scroll via trackpad/mouse wheel only.
-        if let scroller = scrollView.horizontalScroller {
-            scroller.scrollerStyle = .overlay
-            scroller.alphaValue = 0
-        }
-
-        // Segment container — document view inside the scroll view.
+        // Segment container — holds breadcrumb segments, can be wider than clipContainer.
         segmentContainer.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.documentView = segmentContainer
-        addSubview(scrollView)
+        clipContainer.addSubview(segmentContainer)
 
-        // Pin segmentContainer's height to the scroll view so it doesn't scroll vertically.
-        // Width is unconstrained — determined by segment content (can exceed scroll view width).
         NSLayoutConstraint.activate([
-            segmentContainer.topAnchor.constraint(equalTo: scrollView.contentView.topAnchor),
-            segmentContainer.bottomAnchor.constraint(equalTo: scrollView.contentView.bottomAnchor),
-            segmentContainer.leadingAnchor.constraint(equalTo: scrollView.contentView.leadingAnchor),
+            segmentContainer.topAnchor.constraint(equalTo: clipContainer.topAnchor),
+            segmentContainer.bottomAnchor.constraint(equalTo: clipContainer.bottomAnchor),
         ])
 
         // Action strip — trailing stack of icon buttons (extensible for FAYT, etc.)
         actionStrip.orientation = .horizontal
+        actionStrip.alignment = .centerY
         actionStrip.spacing = 2
         actionStrip.translatesAutoresizingMaskIntoConstraints = false
         addSubview(actionStrip)
@@ -196,15 +184,16 @@ final class BreadcrumbBarView: NSView {
         setupSearchToggleStrip()
 
         NSLayoutConstraint.activate([
-            scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            scrollView.trailingAnchor.constraint(
+            clipContainer.leadingAnchor.constraint(equalTo: leadingAnchor),
+            clipContainer.trailingAnchor.constraint(
                 equalTo: actionStrip.leadingAnchor, constant: -4
             ),
-            scrollView.topAnchor.constraint(equalTo: topAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            clipContainer.topAnchor.constraint(equalTo: topAnchor),
+            clipContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
 
             actionStrip.trailingAnchor.constraint(equalTo: trailingAnchor),
-            actionStrip.centerYAnchor.constraint(equalTo: centerYAnchor),
+            actionStrip.topAnchor.constraint(equalTo: topAnchor),
+            actionStrip.bottomAnchor.constraint(equalTo: bottomAnchor),
 
             editField.leadingAnchor.constraint(equalTo: leadingAnchor),
             editField.trailingAnchor.constraint(equalTo: trailingAnchor),
@@ -472,7 +461,7 @@ final class BreadcrumbBarView: NSView {
         if isEditMode { exitEditMode() }
 
         // Hide normal breadcrumb UI
-        scrollView.isHidden = true
+        clipContainer.isHidden = true
 
         // Hide non-search action buttons, keep search button visible as toggle
         viewModeButton.isHidden = true
@@ -511,7 +500,7 @@ final class BreadcrumbBarView: NSView {
         searchTextField.stringValue = ""
 
         // Restore breadcrumb UI and action buttons
-        scrollView.isHidden = false
+        clipContainer.isHidden = false
         viewModeButton.isHidden = false
         terminalButton.isHidden = false
         newFileButton.isHidden = false
@@ -687,19 +676,52 @@ final class BreadcrumbBarView: NSView {
         scrollToEnd()
     }
 
-    /// Scrolls the breadcrumb scroll view to show the rightmost segment.
+    /// Shifts the segment container so the rightmost segment is visible.
     private func scrollToEnd() {
         // Defer to the next layout pass so constraints have resolved.
         DispatchQueue.main.async { [weak self] in
-            guard let self,
-                  let clipView = self.scrollView.contentView as? NSClipView else { return }
-            let docWidth = self.segmentContainer.frame.width
-            let clipWidth = clipView.bounds.width
-            if docWidth > clipWidth {
-                clipView.scroll(to: NSPoint(x: docWidth - clipWidth, y: 0))
-                self.scrollView.reflectScrolledClipView(clipView)
-            }
+            guard let self else { return }
+            self.clampSegmentPosition()
         }
+    }
+
+    /// Clamps segmentContainer.frame.origin.x so content stays within valid scroll bounds.
+    /// When content is narrower than the clip area, resets to x=0.
+    /// When wider, shows the rightmost segment by default and clamps to [-(overflow)...0].
+    private func clampSegmentPosition(scrollToEnd: Bool = true) {
+        let docWidth = segmentContainer.frame.width
+        let clipWidth = clipContainer.bounds.width
+        guard docWidth > clipWidth else {
+            segmentContainer.frame.origin.x = 0
+            return
+        }
+        if scrollToEnd {
+            segmentContainer.frame.origin.x = -(docWidth - clipWidth)
+        } else {
+            let minX = -(docWidth - clipWidth)
+            segmentContainer.frame.origin.x = max(minX, min(0, segmentContainer.frame.origin.x))
+        }
+    }
+
+    // MARK: - Horizontal Scroll
+
+    override func scrollWheel(with event: NSEvent) {
+        let docWidth = segmentContainer.frame.width
+        let clipWidth = clipContainer.bounds.width
+        guard docWidth > clipWidth else {
+            super.scrollWheel(with: event)
+            return
+        }
+        // Shift + vertical scroll → horizontal (standard macOS convention for external mice)
+        let deltaX = event.modifierFlags.contains(.shift)
+            ? event.scrollingDeltaY
+            : event.scrollingDeltaX
+        guard deltaX != 0 else {
+            super.scrollWheel(with: event)
+            return
+        }
+        segmentContainer.frame.origin.x += deltaX
+        clampSegmentPosition(scrollToEnd: false)
     }
 
     // MARK: - Path Helpers
@@ -727,7 +749,7 @@ final class BreadcrumbBarView: NSView {
     func enterEditMode() {
         guard !isEditMode, let url = currentURL else { return }
         isEditMode = true
-        scrollView.isHidden = true
+        clipContainer.isHidden = true
         editField.isHidden = false
         editField.activate(with: url.path)
     }
@@ -738,7 +760,7 @@ final class BreadcrumbBarView: NSView {
         isEditMode = false
         editField.deactivate()
         editField.isHidden = true
-        scrollView.isHidden = false
+        clipContainer.isHidden = false
     }
 
     /// Enters edit mode in FAYT filter configuration — path with trailing `/`, cursor at end.
@@ -746,7 +768,7 @@ final class BreadcrumbBarView: NSView {
     func enterFilterMode(initialText: String = "") {
         guard !isEditMode, let url = currentURL else { return }
         isEditMode = true
-        scrollView.isHidden = true
+        clipContainer.isHidden = true
         editField.isHidden = false
         editField.activateForFilter(directoryPath: url.path, initialText: initialText)
     }

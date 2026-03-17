@@ -16,11 +16,14 @@ final class MainWindowController: NSWindowController {
         )
         window.title = "SinglePane"
         window.minSize = NSSize(width: 800, height: 500)
-        window.setFrameAutosaveName("MainWindow")
         window.contentViewController = contentViewController
 
-        // Maximize to fill the screen on launch
-        if let screen = NSScreen.main {
+        // Restore saved frame if one exists, otherwise maximize on first launch.
+        // setFrameAutosaveName must come after contentViewController is set so
+        // Auto Layout constraints are in place before frame restoration.
+        let hasAutoSavedFrame = UserDefaults.standard.string(forKey: "NSWindow Frame MainWindow") != nil
+        window.setFrameAutosaveName("MainWindow")
+        if !hasAutoSavedFrame, let screen = NSScreen.main {
             window.setFrame(screen.visibleFrame, display: true)
         }
 
