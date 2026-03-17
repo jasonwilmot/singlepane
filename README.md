@@ -1,6 +1,6 @@
 # Single Pane
 
-**A single pane of glass for agentic development.** Designed for builders and prototypers who've ditched their IDE. Tabs galore for managing multiple agents while easily moving, reading, and editing files. Purpose-built for Claude Code with hooks so you browse Hacker News and get audio and visual notifications the moment your agents need more food.
+**A single pane of glass for agentic development.** Designed for builders and prototypers who've ditched their IDE. Tabs galore for managing multiple agents while easily moving, reading, and editing files. Purpose-built for Claude Code with hooks so you can browse Hacker News and get audio and visual notifications the moment your agents need more food.
 
 ![Single Pane — Claude Code in the terminal](assets/screenshots/terminal-claude-code.png)
 
